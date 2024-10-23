@@ -26,7 +26,7 @@ func main() {
 		"get": {Action: get, Syntax: ""},         // @BOT_name get
 	}, onMessage, nil)
 
-	srg.SetUp() // データベースに接続
+	srg.SetUp(nil) // データベースに接続
 
 	crr.Start() // Bot を起動
 }
