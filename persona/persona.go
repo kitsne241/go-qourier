@@ -34,7 +34,7 @@ func init() {
 	godotenv.Load(".env")
 }
 
-func SetUp(commands map[string]*Command, onMessage func(*Message)) error {
+func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*Message, *Command, error)) error {
 	for name, command := range commands {
 		command.name = name
 		command.action = varadic(command)
@@ -73,7 +73,9 @@ func SetUp(commands map[string]*Command, onMessage func(*Message)) error {
 		// 最初の 2 つの半角スペースを見つけて最大 3 つに切り分ける。@BOT_name / コマンド / 引数
 
 		if len(elements) == 1 { // elements の長さが 1 なら少なくともコマンドではないのでメッセージとして処理
-			onMessage(ms)
+			if onMessage != nil {
+				onMessage(ms)
+			}
 		} else {
 			if len(elements) == 2 {
 				elements = append(elements, "") // elements の長さが常に 3 になるように規格化
@@ -83,10 +85,17 @@ func SetUp(commands map[string]*Command, onMessage func(*Message)) error {
 				// Bot に対するメンションから始まり、かつコマンド名が次に来るならコマンドを実行
 
 				if err = command.parseExecute(ms, elements[2]); err != nil {
-					log.Printf("failed to run command: %s", err)
+					errMessage := fmt.Errorf("failed to run command: %s", err)
+					if onFail != nil {
+						onFail(ms, command, errMessage)
+					} else {
+						log.Print(errMessage)
+					}
 				}
 			} else { // 登録コマンドの名前に一致するものがなければ、単にメッセージとして受け取った時の関数を実行
-				onMessage(ms)
+				if onMessage != nil {
+					onMessage(ms)
+				}
 			}
 		}
 	})

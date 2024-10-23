@@ -24,10 +24,11 @@ func main() {
 	crr.SetUp(map[string]*crr.Command{
 		"set": {Action: set, Syntax: "%s %d:%d"}, // @BOT_name set Sunday 21:00
 		"get": {Action: get, Syntax: ""},         // @BOT_name get
-	}, respond)
-	srg.SetUp()
+	}, onMessage, nil)
 
-	crr.Start()
+	srg.SetUp() // データベースに接続
+
+	crr.Start() // Bot を起動
 }
 
 type Date struct {
@@ -48,10 +49,9 @@ func get(ms *crr.Message) {
 	ms.Channel.Send(fmt.Sprintf("I remember it was on %s %02d:%02d!", date.Day, date.Hour, date.Min))
 }
 
-func respond(ms *crr.Message) {
+func onMessage(ms *crr.Message) {
 	ms.Channel.Send(fmt.Sprintf("Oisu! Here is #%s", ms.Channel.Path))
 }
-
 ```
 
 ### 環境構築と起動
