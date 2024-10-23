@@ -75,18 +75,17 @@ func varadic(command *Command) func(*Message, ...any) error {
 		panic(fmt.Sprintf("'%s' is not a function", command.name))
 	}
 
-	// func が返り値を持たないことを確認
-	if fnType.NumOut() > 0 {
-		panic(fmt.Sprintf("'%s' should not have any returns", command.name))
+	// func が error 型の返り値をただ 1 つ持つことを確認
+	if fnType.NumOut() > 1 {
+		panic(fmt.Sprintf("'%s' should have only one return", command.name))
+	}
+	if fnType.NumOut() < 1 || fnType.Out(0) != reflect.TypeOf((*error)(nil)).Elem() {
+		// ショートサーキット評価によって、fnType.NumOut() < 1 が判明すると || 以降の条件式は読まれない
+		panic(fmt.Sprintf("'%s' should have an error return", command.name))
 	}
 
-	// 最低でも1つの引数を持っているか確認
-	if fnType.NumIn() < 1 {
-		panic(fmt.Sprintf("first argument of '%s' must be *Message", command.name))
-	}
-
-	// func の第一引数が *Message 型であることを確認
-	if fnType.In(0) != reflect.TypeOf((*Message)(nil)) {
+	// func が *Message 型の引数を最初に持つことを確認
+	if fnType.NumIn() < 1 || fnType.In(0) != reflect.TypeOf((*Message)(nil)) {
 		panic(fmt.Sprintf("first argument of '%s' must be *Message", command.name))
 	}
 
@@ -140,8 +139,13 @@ func varadic(command *Command) func(*Message, ...any) error {
 			callArgs[i+1] = reflect.ValueOf(arg)
 		}
 
-		fnValue.Call(callArgs)
-		return nil
+		result := fnValue.Call(callArgs)
+
+		// エラーならばエラーを、nil ならば nil を返す
+		if result[0].IsNil() {
+			return nil
+		}
+		return result[0].Interface().(error)
 	}
 }
 

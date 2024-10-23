@@ -16,7 +16,7 @@ import (
 )
 
 type Command struct {
-	Action any    // *Message 型 とその他 0 個以上の引数を持つ関数
+	Action any    // *Message 型 とその他 0 個以上の引数を持ち、error 型を返す関数
 	Syntax string // %s（文字列）, %d（数）, %x（無視）を用いた文字列として指定するコマンドの型
 
 	// 以下は SetUp の実行によって自動で追加される
@@ -35,6 +35,9 @@ func init() {
 }
 
 func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*Message, *Command, error)) error {
+	// onMessage : 受け取ったメッセージがコマンドでない場合に呼ばれる関数
+	// onFail    : 何らかの原因でコマンドの実行が失敗したときに呼ばれる関数
+
 	for name, command := range commands {
 		command.name = name
 		command.action = varadic(command)
