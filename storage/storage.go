@@ -35,7 +35,10 @@ func init() {
 	// NeoShowcase ではもとから環境変数が設定されているのでエラーをスルーして処理を続行
 }
 
-func SetUp() error {
+func SetUp(initial any) error {
+	// 引数はデータベースに保存するデータの初期値
+	// データベースに何も保存されていない最初の状態や異常時にのみこの値を用いる
+
 	jst, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
 		return fmt.Errorf("failed to load location: %w", err)
@@ -52,7 +55,7 @@ func SetUp() error {
 		AllowNativePasswords: true, // これがないとパスワード認証で突っぱねられる
 		Loc:                  jst,
 	}
-	// 本来ならこの courier を環境独立にするために環境変数も引数として受け取った方が良いだろうけど、
+	// 本来ならこの storage を環境独立にするために環境変数も引数として受け取った方が良いだろうけど、
 	// データベースを使うなら大概 NeoShowcase だろうという甘い読みで引数にはしていない
 
 	if cps.Db, err = sqlx.Open("mysql", conf.FormatDSN()); err != nil { // データベースに接続
@@ -78,6 +81,10 @@ func SetUp() error {
 
 		if _, err := cps.Db.Exec(`INSERT INTO config (json) VALUES ('{}')`); err != nil {
 			return fmt.Errorf("failed to insert record: %w", err)
+		}
+
+		if err := Save(initial); err != nil {
+			return fmt.Errorf("failed to initialize record: %w", err)
 		}
 	}
 
