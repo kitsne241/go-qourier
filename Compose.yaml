@@ -1,0 +1,19 @@
+version: "3"
+services:
+  db:
+    image: mariadb # https://hub.docker.com/_/mariadb をテンプレートとして使うことを宣言
+    container_name: traq_bot # 具体的な Bot の名前に変更しておくとあとで競合を防げる
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: "rootpass"
+      MARIADB_DATABASE: ${NS_MARIADB_DATABASE} # データベース名
+      MARIADB_USER: ${NS_MARIADB_USER}
+      MARIADB_PASSWORD: ${NS_MARIADB_PASSWORD}
+      TZ: Asia/Tokyo
+    ports:
+      - ${NS_MARIADB_PORT}:${NS_MARIADB_PORT} # Go のスクリプトからデータベースにアクセス
+    volumes:
+      - bot_data:/var/lib/mysql # ボリュームはここにするよ〜という合図
+
+volumes:
+  bot_data: # 作るボリュームの名前を指定
