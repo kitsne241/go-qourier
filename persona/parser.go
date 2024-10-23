@@ -77,11 +77,11 @@ func varadic(command *Command) func(*Message, ...any) error {
 
 	// func が error 型の返り値をただ 1 つ持つことを確認
 	if fnType.NumOut() > 1 {
-		panic(fmt.Sprintf("'%s' should have only one return", command.name))
+		panic(fmt.Sprintf("'%s' must have only one return", command.name))
 	}
 	if fnType.NumOut() < 1 || fnType.Out(0) != reflect.TypeOf((*error)(nil)).Elem() {
 		// ショートサーキット評価によって、fnType.NumOut() < 1 が判明すると || 以降の条件式は読まれない
-		panic(fmt.Sprintf("'%s' should have an error return", command.name))
+		panic(fmt.Sprintf("'%s' must have an error return", command.name))
 	}
 
 	// func が *Message 型の引数を最初に持つことを確認

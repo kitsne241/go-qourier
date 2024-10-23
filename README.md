@@ -37,16 +37,18 @@ type Date struct {
 	Min  int    `json:"min"`
 }
 
-func set(ms *crr.Message, day string, hour int, min int) {
+func set(ms *crr.Message, day string, hour int, min int) error {
 	ms.Channel.Send(fmt.Sprintf("On %s %02d:%02d, right?", day, hour, min)) // ゼロ埋め
 	srg.Save(Date{Day: day, Hour: hour, Min: min})
 	ms.Stamp("done-nya") // 両側のコロンは入れずに
+	return nil
 }
 
-func get(ms *crr.Message) {
+func get(ms *crr.Message) error {
 	var date Date
 	srg.Load(&date)
 	ms.Channel.Send(fmt.Sprintf("I remember it was on %s %02d:%02d!", date.Day, date.Hour, date.Min))
+	return nil
 }
 
 func onMessage(ms *crr.Message) {
