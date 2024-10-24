@@ -102,21 +102,48 @@ func (ch *Channel) GetChildren() ([]*Channel, error) {
 	return children, nil
 }
 
-func (ch *Channel) GetRecentMessages(limit int32) ([]*Message, error) {
-	resp, _, err := bot.Wsbot.API().ChannelApi.GetMessages(context.Background(), ch.ID).Limit(limit).Execute()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get recent messages: %w", err)
-	}
+func (ch *Channel) GetRecentMessages(limit int) ([]*Message, error) {
+	respAll := make([]traq.Message, 3000) // 上限はとりあえず 3000 とする
 
-	messages := []*Message{}
-	for _, message := range resp {
-		mes, err := GetMessage(message.Id)
+	for i := 0; i*150 < limit; i++ {
+		resp, _, err := bot.Wsbot.API().ChannelApi.GetMessages(context.Background(), ch.ID).Limit(int32(150)).Offset(int32(150 * i)).Execute()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get recent messages: %w", err)
 		}
-		messages = append(messages, mes)
+
+		for j, res := range resp {
+			respAll[i*150+j] = res
+		}
+
+		if len(resp) < 150 {
+			respAll = respAll[:i*150+len(resp)] // 取りうる数の上限で respAll の長さを再規定
+			break
+		}
+	}
+	if len(respAll) > limit {
+		respAll = respAll[:limit] // ユーザーが指定した limit で respAll の長さを再規定
 	}
 
+	// もともとの ChannelApi.GetMessages の仕様として、
+	// 一度に 200 以上メッセージを読み込もうとすると失敗して 400 Bad Request が返るので 150 刻みに取得するように設計
+
+	jst, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load location: %w", err)
+	}
+
+	messages := make([]*Message, len(respAll))
+	for i, message := range respAll {
+		messages[i] = &Message{
+			Channel:   ch,
+			Text:      message.Content,
+			ID:        message.Id,
+			CreatedAt: message.CreatedAt.In(jst),
+			UpdatedAt: message.UpdatedAt.In(jst),
+		}
+	}
+
+	// ちょうど limit 個分、あるいは取れる分だけのメッセージの配列を返す
 	return messages, nil
 }
 
