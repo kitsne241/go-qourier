@@ -55,7 +55,7 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		panic(fmt.Sprintf("failed to initialize bot: %v", err))
 	}
 
-	Me, err := GetMe()
+	Me, err = GetMe()
 	if err != nil {
 		panic(err)
 	}
