@@ -58,11 +58,16 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		return fmt.Errorf("failed to get myself: %w", err) // すごい文面だ…
 	}
 
-	bot.Name = me.Name
 	bot.ID = me.Id
+	bot.User = &User{
+		Nick:  me.DisplayName,
+		Name:  me.Name,
+		ID:    me.Id,
+		IsBot: true,
+	}
 
 	bot.Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
-		mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", bot.Name, bot.ID)
+		mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", bot.User.Name, bot.ID)
 		// メッセージ本文などではメンションは JSON 形式の文字列に置き換えられている
 
 		ms, err := GetMessage(p.Message.ID)

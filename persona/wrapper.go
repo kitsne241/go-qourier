@@ -13,7 +13,7 @@ import (
 type Bot struct {
 	Wsbot *traqwsbot.Bot
 	ID    string
-	Name  string
+	User  *User
 }
 
 type Message struct {
@@ -244,7 +244,3 @@ func (ch *Channel) Leave() {
 		log.Printf("failed to leave: %s", err)
 	}
 }
-
-// おそらく毎回 UserId から GetUser してるとまた締め出されるので、
-// 数十程度の情報ならここで読み込んでしまうのもアリ
-// 「チャンネルに参加したことがある人」のリストから User 作れないか？
