@@ -26,7 +26,7 @@ type Command struct {
 
 var stampID = map[string]string{} // スタンプの名前と ID の対応の辞書
 
-var bot Bot
+var Wsbot *traqwsbot.Bot
 
 // main.go で使うサブパッケージの関数は全て大文字から始める。小文字スタートのままではインポートが失敗する
 
@@ -46,28 +46,20 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 	// この際 varadic の内部で関数の構造が条件に適合しているかの審査を同時に行い、不適正なら panic する
 
 	var err error
-	bot.Wsbot, err = traqwsbot.NewBot(&traqwsbot.Options{ // Bot を作成
+	Wsbot, err = traqwsbot.NewBot(&traqwsbot.Options{ // Bot を作成
 		AccessToken: os.Getenv("ACCESS_TOKEN"),
 	})
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize bot: %v", err))
 	}
 
-	me, _, err := bot.Wsbot.API().MeApi.GetMe(context.Background()).Execute()
+	me, err := GetMe()
 	if err != nil {
-		return fmt.Errorf("failed to get myself: %w", err) // すごい文面だ…
+		panic(err)
 	}
 
-	bot.ID = me.Id
-	bot.User = &User{
-		Nick:  me.DisplayName,
-		Name:  me.Name,
-		ID:    me.Id,
-		IsBot: true,
-	}
-
-	bot.Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
-		mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", bot.User.Name, bot.ID)
+	Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
+		mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", me.Name, me.ID)
 		// メッセージ本文などではメンションは JSON 形式の文字列に置き換えられている
 
 		ms, err := GetMessage(p.Message.ID)
@@ -109,7 +101,7 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 	})
 
 	getAllStamps := func() (map[string]string, error) {
-		resp, _, err := bot.Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
+		resp, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get stamps: %w", err)
 		}
@@ -131,5 +123,5 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 }
 
 func Start() error {
-	return bot.Wsbot.Start()
+	return Wsbot.Start()
 }

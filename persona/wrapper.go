@@ -7,14 +7,13 @@ import (
 	"time"
 
 	traq "github.com/traPtitech/go-traq"
-	traqwsbot "github.com/traPtitech/traq-ws-bot"
 )
 
-type Bot struct {
-	Wsbot *traqwsbot.Bot
-	ID    string
-	User  *User
-}
+// type Bot struct {
+// 	Wsbot *traqwsbot.Bot
+// 	ID    string
+// 	User  *User
+// }
 
 type Message struct {
 	Channel   *Channel
@@ -40,7 +39,7 @@ type User struct {
 }
 
 func GetChannel(chID string) (*Channel, error) {
-	resp, _, err := bot.Wsbot.API().ChannelApi.GetChannel(context.Background(), chID).Execute()
+	resp, _, err := Wsbot.API().ChannelApi.GetChannel(context.Background(), chID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get channel: %w", err)
 	}
@@ -68,7 +67,7 @@ func GetChannel(chID string) (*Channel, error) {
 }
 
 func GetMessage(msID string) (*Message, error) {
-	resp, _, err := bot.Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
+	resp, _, err := Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get message: %w", err)
 	}
@@ -99,7 +98,7 @@ func GetMessage(msID string) (*Message, error) {
 }
 
 func GetUser(usID string) (*User, error) {
-	resp, _, err := bot.Wsbot.API().UserApi.GetUser(context.Background(), usID).Execute()
+	resp, _, err := Wsbot.API().UserApi.GetUser(context.Background(), usID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -112,8 +111,22 @@ func GetUser(usID string) (*User, error) {
 	}, nil
 }
 
+func GetMe() (*User, error) {
+	resp, _, err := Wsbot.API().MeApi.GetMe(context.Background()).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get myself: %w", err) // すごい文面だ…
+	}
+
+	return &User{
+		Nick:  resp.DisplayName,
+		Name:  resp.Name,
+		ID:    resp.Id,
+		IsBot: true,
+	}, nil
+}
+
 func (ch *Channel) GetChildren() ([]*Channel, error) {
-	resp, _, err := bot.Wsbot.API().ChannelApi.GetChannel(context.Background(), ch.ID).Execute()
+	resp, _, err := Wsbot.API().ChannelApi.GetChannel(context.Background(), ch.ID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get children: %w", err)
 	}
@@ -134,7 +147,7 @@ func (ch *Channel) GetRecentMessages(limit int) ([]*Message, error) {
 	respAll := make([]traq.Message, 3000) // 上限はとりあえず 3000 とする
 
 	for i := 0; i*150 < limit; i++ {
-		resp, _, err := bot.Wsbot.API().ChannelApi.GetMessages(context.Background(), ch.ID).Limit(int32(150)).Offset(int32(150 * i)).Execute()
+		resp, _, err := Wsbot.API().ChannelApi.GetMessages(context.Background(), ch.ID).Limit(int32(150)).Offset(int32(150 * i)).Execute()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get recent messages: %w", err)
 		}
@@ -192,7 +205,7 @@ func (ch *Channel) GetRecentMessages(limit int) ([]*Message, error) {
 }
 
 func (ch *Channel) Send(content string) {
-	_, _, err := bot.Wsbot.API().
+	_, _, err := Wsbot.API().
 		MessageApi.
 		PostMessage(context.Background(), ch.ID).
 		PostMessageRequest(traq.PostMessageRequest{
@@ -211,7 +224,7 @@ func (ch *Channel) Send(content string) {
 }
 
 func (ms *Message) Stamp(stamp string) {
-	_, err := bot.Wsbot.API().
+	_, err := Wsbot.API().
 		MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID[stamp]).
 		PostMessageStampRequest(*traq.NewPostMessageStampRequestWithDefaults()).Execute()
 
@@ -221,25 +234,37 @@ func (ms *Message) Stamp(stamp string) {
 }
 
 func (ch *Channel) Join() {
-	_, err := bot.Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), bot.ID).
+	me, err := GetMe()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	_, err = Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), me.ID).
 		PostBotActionJoinRequest(*traq.NewPostBotActionJoinRequest(ch.ID)).Execute()
 	if err != nil {
 		log.Printf("failed to join: %s", err)
 	}
 
-	_, _, err = bot.Wsbot.API().ChannelApi.GetChannel(context.Background(), ch.ID).Execute()
+	_, _, err = Wsbot.API().ChannelApi.GetChannel(context.Background(), ch.ID).Execute()
 	if err != nil {
 		log.Printf("failed to join: %s", err)
 	}
 }
 
 func (ch *Channel) Leave() {
-	_, err := bot.Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), bot.ID).
+	me, err := GetMe()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	_, err = Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), me.ID).
 		PostBotActionLeaveRequest(*traq.NewPostBotActionLeaveRequest(ch.ID)).Execute()
 	if err != nil {
 		log.Printf("failed to leave: %s", err)
 	}
-	_, _, err = bot.Wsbot.API().ChannelApi.GetChannel(context.Background(), ch.ID).Execute()
+	_, _, err = Wsbot.API().ChannelApi.GetChannel(context.Background(), ch.ID).Execute()
 	if err != nil {
 		log.Printf("failed to leave: %s", err)
 	}
