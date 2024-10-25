@@ -22,6 +22,7 @@ type Message struct {
 	ID        string
 	CreatedAt time.Time // JST
 	UpdatedAt time.Time // JST
+	Author    *User
 }
 
 type Channel struct {
@@ -29,6 +30,13 @@ type Channel struct {
 	Path   string // 例： "team/sound/1DTM"
 	ID     string
 	Parent *Channel
+}
+
+type User struct {
+	Nick  string // きつね
+	Name  string // @kitsne
+	ID    string // UUID
+	IsBot bool
 }
 
 func GetChannel(chID string) (*Channel, error) {
@@ -59,13 +67,18 @@ func GetChannel(chID string) (*Channel, error) {
 	}, nil
 }
 
-func GetMessage(chID string) (*Message, error) {
-	resp, _, err := bot.Wsbot.API().MessageApi.GetMessage(context.Background(), chID).Execute()
+func GetMessage(msID string) (*Message, error) {
+	resp, _, err := bot.Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get message: %w", err)
 	}
 
 	ch, err := GetChannel(resp.ChannelId)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := GetUser(resp.UserId)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +94,21 @@ func GetMessage(chID string) (*Message, error) {
 		ID:        resp.Id,
 		CreatedAt: resp.CreatedAt.In(jst),
 		UpdatedAt: resp.UpdatedAt.In(jst),
+		Author:    user,
+	}, nil
+}
+
+func GetUser(usID string) (*User, error) {
+	resp, _, err := bot.Wsbot.API().UserApi.GetUser(context.Background(), usID).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return &User{
+		Nick:  resp.DisplayName,
+		Name:  resp.Name,
+		ID:    usID,
+		IsBot: resp.Bot,
 	}, nil
 }
 
@@ -132,14 +160,30 @@ func (ch *Channel) GetRecentMessages(limit int) ([]*Message, error) {
 		return nil, fmt.Errorf("failed to load location: %w", err)
 	}
 
+	// 連続して API にアクセスすると失敗するので、こちらでは GetMessage は使っていない。書き換え時注意！
+
+	userDic := map[string]*User{}
+	// ユーザーの UUID と User 型との対応の辞書
+	// 同じユーザーに対して何度も GetUser をするのは処理の無駄が激しく API の制限も受けやすいので、
+	// 一時的に情報を保存の上再利用して制限を回避する
+
 	messages := make([]*Message, len(respAll))
 	for i, message := range respAll {
+		_, exists := userDic[message.UserId]
+		if !exists {
+			userDic[message.UserId], err = GetUser(message.UserId)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		messages[i] = &Message{
 			Channel:   ch,
 			Text:      message.Content,
 			ID:        message.Id,
 			CreatedAt: message.CreatedAt.In(jst),
 			UpdatedAt: message.UpdatedAt.In(jst),
+			Author:    userDic[message.UserId],
 		}
 	}
 
@@ -200,3 +244,7 @@ func (ch *Channel) Leave() {
 		log.Printf("failed to leave: %s", err)
 	}
 }
+
+// おそらく毎回 UserId から GetUser してるとまた締め出されるので、
+// 数十程度の情報ならここで読み込んでしまうのもアリ
+// 「チャンネルに参加したことがある人」のリストから User 作れないか？
