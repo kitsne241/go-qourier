@@ -65,28 +65,28 @@ func (command *Command) parseExecute(ms *Message, optionOrigin string) error {
 	return command.action(ms, args...)
 }
 
-func varadic(command *Command) func(*Message, ...any) error {
+func varadic(command *Command) (func(*Message, ...any) error, error) {
 	// 関数を受け取り、多変数引数関数を返す
 	fnValue := reflect.ValueOf(command.Action)
 	fnType := fnValue.Type()
 
 	// func が関数であるか確認
 	if fnType.Kind() != reflect.Func {
-		panic(fmt.Sprintf("'%s' is not a function", command.name))
+		return nil, fmt.Errorf("'%s' is not a function", command.name)
 	}
 
 	// func が error 型の返り値をただ 1 つ持つことを確認
 	if fnType.NumOut() > 1 {
-		panic(fmt.Sprintf("'%s' must have only one return", command.name))
+		return nil, fmt.Errorf("'%s' must have only one return", command.name)
 	}
 	if fnType.NumOut() < 1 || fnType.Out(0) != reflect.TypeOf((*error)(nil)).Elem() {
 		// ショートサーキット評価によって、fnType.NumOut() < 1 が判明すると || 以降の条件式は読まれない
-		panic(fmt.Sprintf("'%s' must have an error return", command.name))
+		return nil, fmt.Errorf("'%s' must have an error return", command.name)
 	}
 
 	// func が *Message 型の引数を最初に持つことを確認
 	if fnType.NumIn() < 1 || fnType.In(0) != reflect.TypeOf((*Message)(nil)) {
-		panic(fmt.Sprintf("first argument of '%s' must be *Message", command.name))
+		return nil, fmt.Errorf("first argument of '%s' must be *Message", command.name)
 	}
 
 	// command.Syntax と照合し、第二引数以降の型の合致を確認
@@ -100,18 +100,18 @@ func varadic(command *Command) func(*Message, ...any) error {
 		switch receiving {
 		case 's':
 			if fnType.NumIn() == i {
-				panic(fmt.Sprintf("'%s' does not have enough arguments", command.name))
+				return nil, fmt.Errorf("'%s' does not have enough arguments", command.name)
 			}
 			if fnType.In(i) != reflect.TypeOf("") {
-				panic(fmt.Sprintf("argument %d of '%s' must be string", i+1, command.name))
+				return nil, fmt.Errorf("argument %d of '%s' must be string", i+1, command.name)
 			}
 			i++
 		case 'd':
 			if fnType.NumIn() == i {
-				panic(fmt.Sprintf("'%s' does not have enough arguments", command.name))
+				return nil, fmt.Errorf("'%s' does not have enough arguments", command.name)
 			}
 			if fnType.In(i) != reflect.TypeOf(0) {
-				panic(fmt.Sprintf("argument %d of '%s' must be int", i+1, command.name))
+				return nil, fmt.Errorf("argument %d of '%s' must be int", i+1, command.name)
 			}
 			i++
 		}
@@ -125,7 +125,7 @@ func varadic(command *Command) func(*Message, ...any) error {
 	}
 
 	if fnType.NumIn() != i {
-		panic(fmt.Sprintf("'%s' has too many arguments", command.name))
+		return nil, fmt.Errorf("'%s' has too many arguments", command.name)
 	}
 
 	return func(ms *Message, args ...any) error {
@@ -146,7 +146,7 @@ func varadic(command *Command) func(*Message, ...any) error {
 			return nil
 		}
 		return result[0].Interface().(error)
-	}
+	}, nil
 }
 
 func nextSpecifier(syntax string) int {

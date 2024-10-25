@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	cp "github.com/kitsne241/go-qourier/cprint"
 	traqwsbot "github.com/traPtitech/traq-ws-bot"
 	payload "github.com/traPtitech/traq-ws-bot/payload"
 )
@@ -24,11 +25,11 @@ type Command struct {
 	action func(*Message, ...any) error // Action を可変引数化した関数。実際に実行されるのはこっち
 }
 
-var stampID = map[string]string{} // スタンプの名前と ID の対応の辞書
-
 var Wsbot *traqwsbot.Bot
 
 var Me *User
+
+var stampID = map[string]string{} // スタンプの名前と ID の対応の辞書
 
 // main.go で使うサブパッケージの関数は全て大文字から始める。小文字スタートのままではインポートが失敗する
 
@@ -40,33 +41,34 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 	// onMessage : 受け取ったメッセージがコマンドでない場合に呼ばれる関数
 	// onFail    : 何らかの原因でコマンドの実行が失敗したときに呼ばれる関数
 
+	var err error
 	for name, command := range commands {
 		command.name = name
-		command.action = varadic(command)
+		command.action, err = varadic(command)
+		if err != nil {
+			cp.CPanic("[dfailed to register command %s] %s", name, err)
+		}
 	}
 	// Command 型の配列である引数 commands から {関数名: 実行関数} の辞書 commandsDic を得る
 	// この際 varadic の内部で関数の構造が条件に適合しているかの審査を同時に行い、不適正なら panic する
 
-	var err error
 	Wsbot, err = traqwsbot.NewBot(&traqwsbot.Options{ // Bot を作成
 		AccessToken: os.Getenv("ACCESS_TOKEN"),
 	})
 	if err != nil {
-		panic(fmt.Sprintf("failed to initialize bot: %v", err))
+		cp.CPanic("[failed to create a new bot] %s", err)
 	}
 
-	Me, err = GetMe()
-	if err != nil {
-		panic(err)
+	if Me = GetMe(); Me == nil {
+		cp.CPanic("[failed to build a bot]")
 	}
 
 	Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
 		mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", Me.Name, Me.ID)
 		// メッセージ本文などではメンションは JSON 形式の文字列に置き換えられている
 
-		ms, err := GetMessage(p.Message.ID)
-		if err != nil {
-			log.Printf("failed to react to message: %s", err)
+		ms := GetMessage(p.Message.ID)
+		if ms == nil {
 			return
 		}
 
@@ -87,11 +89,10 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 				// Bot に対するメンションから始まり、かつコマンド名が次に来るならコマンドを実行
 
 				if err = command.parseExecute(ms, elements[2]); err != nil {
-					errMessage := fmt.Errorf("failed to run command: %s", err)
 					if onFail != nil {
-						onFail(ms, command, errMessage)
+						onFail(ms, command, err)
 					} else {
-						log.Print(errMessage)
+						cp.CPrintf("[failed to run command %s] %s", elements[2], err)
 					}
 				}
 			} else { // 登録コマンドの名前に一致するものがなければ、単にメッセージとして受け取った時の関数を実行
@@ -102,28 +103,25 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		}
 	})
 
-	getAllStamps := func() (map[string]string, error) {
-		resp, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get stamps: %w", err)
-		}
-
-		result := make(map[string]string)
-		for _, stamp := range resp { // resp にはtraQ の全てのスタンプの情報が入っている
-			result[stamp.Name] = stamp.Id
-		}
-
-		return result, nil
-	}
-
-	if stampID, err = getAllStamps(); err != nil {
-		return err
-	}
-
-	log.Printf("initialized bot")
+	stampID = getAllStamps()
+	log.Printf("[initialized bot]")
 	return nil
 }
 
 func Start() error {
 	return Wsbot.Start()
+}
+
+func getAllStamps() map[string]string {
+	resp, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
+	if err != nil {
+		cp.CPrintf("[failed to get stamps in GetAllStamps()] %s", err)
+		return nil
+	}
+
+	result := make(map[string]string)
+	for _, stamp := range resp { // resp にはtraQ の全てのスタンプの情報が入っている
+		result[stamp.Name] = stamp.Id
+	}
+	return result
 }
