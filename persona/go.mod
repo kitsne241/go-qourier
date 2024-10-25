@@ -2,6 +2,8 @@ module github.com/kitsne241/go-qourier/persona
 
 go 1.22.6
 
+replace github.com/kitsne241/go-qourier/cprint => ./cprint
+
 require (
 	github.com/joho/godotenv v1.5.1
 	github.com/traPtitech/go-traq v0.0.0-20240725071454-97c7b85dc879

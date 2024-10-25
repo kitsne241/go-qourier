@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	cp "github.com/kitsne241/go-qourier/cprint"
 	traq "github.com/traPtitech/go-traq"
 )
 
@@ -13,15 +14,16 @@ type Message struct {
 	ID        string
 	CreatedAt time.Time // JST
 	UpdatedAt time.Time // JST
+	Author    *User
 }
 
 // 基本的に error は出さずに nil あるいは空の配列として伝える方針
 // 適切な引数による実行の上で API との接続で問題が生じた場合はエラーメッセージがエラーの原因に直接結びつかない気がするため
 
-func GetMessage(chID string) *Message {
-	resp, _, err := bot.Wsbot.API().MessageApi.GetMessage(context.Background(), chID).Execute()
+func GetMessage(msID string) *Message {
+	resp, _, err := Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
 	if err != nil {
-		CPrintf("[failed to get message in GetMessage(%s)] %s", chID, err)
+		cp.CPrintf("[failed to get message in GetMessage(%s)] %s", msID, err)
 		return nil
 	}
 
@@ -30,9 +32,14 @@ func GetMessage(chID string) *Message {
 		return nil
 	}
 
+	user := GetUser(resp.UserId)
+	if user == nil {
+		return nil
+	}
+
 	jst, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
-		CPrintf("[failed to load location in GetMessage(%s)] %s", chID, err)
+		cp.CPrintf("[failed to load location in GetMessage(%s)] %s", msID, err)
 		return nil
 	}
 
@@ -42,15 +49,18 @@ func GetMessage(chID string) *Message {
 		ID:        resp.Id,
 		CreatedAt: resp.CreatedAt.In(jst),
 		UpdatedAt: resp.UpdatedAt.In(jst),
+		Author:    user,
 	}
 }
 
 func (ms *Message) Stamp(stamp string) {
-	_, err := bot.Wsbot.API().
-		MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID[stamp]).
+	if ms == nil {
+		return
+	}
+	_, err := Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID[stamp]).
 		PostMessageStampRequest(*traq.NewPostMessageStampRequestWithDefaults()).Execute()
 
 	if err != nil {
-		CPrintf("[failed to put stamp in Stamp()] %s\nms = %v", err, ms)
+		cp.CPrintf("[failed to put stamp in Stamp()] %s\nms = %v", err, ms)
 	}
 }
