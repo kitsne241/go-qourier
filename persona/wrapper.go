@@ -234,13 +234,7 @@ func (ms *Message) Stamp(stamp string) {
 }
 
 func (ch *Channel) Join() {
-	me, err := GetMe()
-	if err != nil {
-		log.Print(err)
-		return
-	}
-
-	_, err = Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), me.ID).
+	_, err := Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), Me.ID).
 		PostBotActionJoinRequest(*traq.NewPostBotActionJoinRequest(ch.ID)).Execute()
 	if err != nil {
 		log.Printf("failed to join: %s", err)
@@ -253,13 +247,7 @@ func (ch *Channel) Join() {
 }
 
 func (ch *Channel) Leave() {
-	me, err := GetMe()
-	if err != nil {
-		log.Print(err)
-		return
-	}
-
-	_, err = Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), me.ID).
+	_, err := Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), Me.ID).
 		PostBotActionLeaveRequest(*traq.NewPostBotActionLeaveRequest(ch.ID)).Execute()
 	if err != nil {
 		log.Printf("failed to leave: %s", err)

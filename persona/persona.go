@@ -28,6 +28,8 @@ var stampID = map[string]string{} // スタンプの名前と ID の対応の辞
 
 var Wsbot *traqwsbot.Bot
 
+var Me *User
+
 // main.go で使うサブパッケージの関数は全て大文字から始める。小文字スタートのままではインポートが失敗する
 
 func init() {
@@ -53,13 +55,13 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		panic(fmt.Sprintf("failed to initialize bot: %v", err))
 	}
 
-	me, err := GetMe()
+	Me, err := GetMe()
 	if err != nil {
 		panic(err)
 	}
 
 	Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
-		mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", me.Name, me.ID)
+		mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", Me.Name, Me.ID)
 		// メッセージ本文などではメンションは JSON 形式の文字列に置き換えられている
 
 		ms, err := GetMessage(p.Message.ID)
@@ -68,7 +70,7 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 			return
 		}
 
-		content := strings.Replace(ms.Text, mention, "@"+me.Name, 1)
+		content := strings.Replace(ms.Text, mention, "@"+Me.Name, 1)
 		elements := strings.SplitN(content, " ", 3)
 		// 最初の 2 つの半角スペースを見つけて最大 3 つに切り分ける。@BOT_name / コマンド / 引数
 
@@ -81,7 +83,7 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 				elements = append(elements, "") // elements の長さが常に 3 になるように規格化
 			}
 			command, exists := commands[elements[1]]
-			if (elements[0] == "@"+me.Name) && exists {
+			if (elements[0] == "@"+Me.Name) && exists {
 				// Bot に対するメンションから始まり、かつコマンド名が次に来るならコマンドを実行
 
 				if err = command.parseExecute(ms, elements[2]); err != nil {
