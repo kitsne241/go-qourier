@@ -29,7 +29,9 @@ var Wsbot *traqwsbot.Bot
 
 var Me *User
 
-var stampID = map[string]string{} // スタンプの名前と ID の対応の辞書
+var stampID = map[string]string{}       // "tada" -> "8bfd4032-18d1-477f-894c-08855b46fd2f"
+var userID = map[string]string{}        // "kitsne" -> "a77f54f2-a7dc-4dab-ad6d-5c5df7e9ecfa"
+var channelPathID = map[string]string{} // "gps/times/kitsnegra" -> "019275db-f2fd-7922-81c9-956aab18612d"
 
 // main.go で使うサブパッケージの関数は全て大文字から始める。小文字スタートのままではインポートが失敗する
 
@@ -98,7 +100,10 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		}
 	})
 
-	stampID = getAllStamps()
+	getAllInfo()
+	// 初期化時に一回のみ実行
+	// Bot は定期的に再起動するのでおそらく更新の問題が顕在化することはないはず…
+
 	log.Printf("[initialized bot]")
 }
 
@@ -109,16 +114,68 @@ func Start() error {
 	return Wsbot.Start()
 }
 
-func getAllStamps() map[string]string {
-	resp, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
+func getAllInfo() {
+	log.Println("[collecting stamps...]")
+
+	stamps, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to get stamps in GetAllStamps()] %s", err))
-		return map[string]string{}
+		log.Println(color.HiYellowString("[failed to get stamps in getAllInfo()] %s", err))
 	}
 
-	result := make(map[string]string)
-	for _, stamp := range resp { // resp にはtraQ の全てのスタンプの情報が入っている
-		result[stamp.Name] = stamp.Id
+	stampID = map[string]string{}
+	for _, stamp := range stamps { // resp にはtraQ の全てのスタンプの情報が入っている
+		stampID[stamp.Name] = stamp.Id
 	}
-	return result
+
+	log.Println(stampID["tada"])
+
+	log.Println("[collecting users...]")
+
+	users, _, err := Wsbot.API().UserApi.GetUsers(context.Background()).IncludeSuspended(true).Execute()
+	if err != nil {
+		log.Println(color.HiYellowString("[failed to get users in getAllInfo()] %s", err))
+	}
+
+	userID = map[string]string{}
+	for _, user := range users { // resp にはtraQ の全てのスタンプの情報が入っている
+		userID[user.Name] = user.Id
+	}
+
+	// 一度に何百回も API にアクセスするとエラーを生じがちなので
+	// たった一度の API アクセスからチャンネルの path と ID の対応表を作りたい
+	// GetChannels によって全てのパブリックチャンネルについて チャンネルのID・親チャンネルのID・チャンネルの名前 の 3 つが分かるので、
+	// 親子の関連付けからチャンネルの親子関係のグラフを作成し、それぞれのチャンネルの名前を末尾まで継承してパスを作る
+
+	log.Println("[collecting channels...]")
+
+	channels, _, err := Wsbot.API().ChannelApi.GetChannels(context.Background()).IncludeDm(false).Execute()
+	if err != nil {
+		log.Println(color.HiYellowString("[failed to get channels in getAllInfo()] %s", err))
+	}
+
+	tree := map[string]string{}
+	channelIDName := map[string]string{}
+	channelPathID = map[string]string{}
+
+	for _, channel := range channels.Public { // resp にはtraQ の全てのスタンプの情報が入っている
+		channelIDName[channel.Id] = channel.Name
+		parentID := channel.ParentId.Get()
+		if parentID != nil {
+			tree[channel.Id] = *parentID
+		}
+	}
+
+	for _, channel := range channels.Public {
+		currentID := channel.Id
+		path := channelIDName[currentID]
+		for {
+			var exists bool
+			currentID, exists = tree[currentID]
+			if !exists {
+				break
+			}
+			path = channelIDName[currentID] + "/" + path
+		}
+		channelPathID[path] = channel.Id
+	}
 }
