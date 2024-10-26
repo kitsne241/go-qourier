@@ -17,6 +17,7 @@ import (
 
 	json "encoding/json"
 
+	"github.com/fatih/color"
 	mysql "github.com/go-sql-driver/mysql" // MariaDB を使う場合もこの MySQL ドライバが使用可能
 	sqlx "github.com/jmoiron/sqlx"
 	godotenv "github.com/joho/godotenv"
@@ -41,7 +42,8 @@ func SetUp(initial any) error {
 
 	jst, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
-		return fmt.Errorf("failed to load location: %w", err)
+		log.Printf(color.HiYellowString("[failed to load location] %s", err))
+		panic(color.HiRedString("[failed to initialize database]"))
 	}
 
 	conf := mysql.Config{ // .env から読み込んだ環境変数をもとにデータベースを定義
@@ -59,36 +61,42 @@ func SetUp(initial any) error {
 	// データベースを使うなら大概 NeoShowcase だろうという甘い読みで引数にはしていない
 
 	if cps.Db, err = sqlx.Open("mysql", conf.FormatDSN()); err != nil { // データベースに接続
-		panic(fmt.Errorf("failed to open database: %w", err))
+		panic(color.HiRedString("[failed to open database] %s", err))
 	}
 
 	if _, err = cps.Db.Exec(`CREATE TABLE IF NOT EXISTS config (json JSON);`); err != nil {
-		panic(fmt.Errorf("make sure your container is running!: %w", err))
-		// 本来は failed to create table と返すところだけど、これに関しては原因が明らかなのでエラーメッセージを工夫
+		log.Printf(color.HiYellowString("[failed to create table] %s", err))
+		panic(color.HiRedString("[failed to initialize database] make sure your container is running!"))
 	}
 
 	var count int // すでに存在するレコードの数
 	if err := cps.Db.Get(&count, `SELECT COUNT(*) FROM config`); err != nil {
-		return fmt.Errorf("failed to get count of table: %w", err)
+		log.Printf(color.HiYellowString("[failed to get count of table] %s", err))
+		panic(color.HiRedString("[failed to initialize database]"))
 	}
 
 	// すでにレコードが 1 つある場合には手を加えない（レコードの数が 0 個や 2 個の異常時のみ初期化）
 
 	if count != 1 {
-		if _, err := cps.Db.Exec(`TRUNCATE TABLE config`); err != nil { // テーブルを空にする
-			return fmt.Errorf("failed to truncate table %w", err)
-		}
+		if err := func() error {
+			if _, err := cps.Db.Exec(`TRUNCATE TABLE config`); err != nil { // テーブルを空にする
+				return fmt.Errorf("failed to truncate table %w", err)
+			}
 
-		if _, err := cps.Db.Exec(`INSERT INTO config (json) VALUES ('{}')`); err != nil {
-			return fmt.Errorf("failed to insert record: %w", err)
-		}
+			if _, err := cps.Db.Exec(`INSERT INTO config (json) VALUES ('{}')`); err != nil {
+				return fmt.Errorf("failed to insert record: %w", err)
+			}
 
-		if err := Save(initial); err != nil {
-			return fmt.Errorf("failed to initialize record: %w", err)
+			if err := Save(initial); err != nil {
+				return fmt.Errorf("failed to initialize record: %w", err)
+			}
+			return nil
+		}(); err != nil {
+			panic(color.HiRedString("[failed to reset database] %s", err))
 		}
 	}
 
-	log.Printf("initialized database")
+	log.Printf("[initialized database]")
 	return nil
 }
 

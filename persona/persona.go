@@ -10,8 +10,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/joho/godotenv"
-	cp "github.com/kitsne241/go-qourier/cprint"
 	traqwsbot "github.com/traPtitech/traq-ws-bot"
 	payload "github.com/traPtitech/traq-ws-bot/payload"
 )
@@ -46,7 +46,7 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		command.name = name
 		command.action, err = varadic(command)
 		if err != nil {
-			cp.CPanic("[failed to register command '%s'] %s", name, err)
+			panic(color.HiRedString("[failed to register command '%s'] %s", name, err))
 		}
 	}
 	// Command 型の配列である引数 commands から {関数名: 実行関数} の辞書 commandsDic を得る
@@ -56,11 +56,11 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		AccessToken: os.Getenv("ACCESS_TOKEN"),
 	})
 	if err != nil {
-		cp.CPanic("[failed to create a new bot] %s", err)
+		panic(color.HiRedString("[failed to create a new bot] %s", err))
 	}
 
 	if Me = GetMe(); Me == nil {
-		cp.CPanic("[failed to build a bot]")
+		panic(color.HiRedString("[failed to build a bot] make sure ACCESS_TOKEN is set!"))
 	}
 
 	mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", Me.Name, Me.ID)
@@ -86,7 +86,7 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 				if onFail != nil {
 					onFail(ms, command, err)
 				} else {
-					cp.CPrintf("[failed to run command '%s'] %s", elements[1], err)
+					log.Println(color.HiYellowString("[failed to run command '%s'] %s", elements[1], err))
 				}
 			}
 		} else {
@@ -103,13 +103,16 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 }
 
 func Start() error {
+	if Wsbot == nil {
+		panic(color.HiRedString("[bot is not set up]"))
+	}
 	return Wsbot.Start()
 }
 
 func getAllStamps() map[string]string {
 	resp, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
 	if err != nil {
-		cp.CPrintf("[failed to get stamps in GetAllStamps()] %s", err)
+		log.Println(color.HiYellowString("[failed to get stamps in GetAllStamps()] %s", err))
 		return map[string]string{}
 	}
 

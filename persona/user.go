@@ -2,8 +2,9 @@ package persona
 
 import (
 	"context"
+	"log"
 
-	cp "github.com/kitsne241/go-qourier/cprint"
+	"github.com/fatih/color"
 )
 
 type User struct {
@@ -16,7 +17,7 @@ type User struct {
 func GetUser(usID string) *User {
 	resp, _, err := Wsbot.API().UserApi.GetUser(context.Background(), usID).Execute()
 	if err != nil {
-		cp.CPrintf("[failed to get user in GetUser(%d)] %s", usID, err)
+		log.Println(color.HiYellowString("[failed to get user in GetUser(%d)] %s", usID, err))
 		return nil
 	}
 
@@ -35,7 +36,7 @@ func GetUser(usID string) *User {
 func GetMe() *User {
 	resp, _, err := Wsbot.API().MeApi.GetMe(context.Background()).Execute()
 	if err != nil {
-		cp.CPrintf("[failed to get myself in GetMe()] %s", err) // すごい文面だ…
+		log.Println(color.HiYellowString("[failed to get myself in GetMe()] %s", err)) // すごい文面だ…
 		return nil
 	}
 

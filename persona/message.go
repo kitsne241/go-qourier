@@ -2,9 +2,10 @@ package persona
 
 import (
 	"context"
+	"log"
 	"time"
 
-	cp "github.com/kitsne241/go-qourier/cprint"
+	"github.com/fatih/color"
 	traq "github.com/traPtitech/go-traq"
 )
 
@@ -23,7 +24,7 @@ type Message struct {
 func GetMessage(msID string) *Message {
 	resp, _, err := Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
 	if err != nil {
-		cp.CPrintf("[failed to get message in GetMessage(%s)] %s", msID, err)
+		log.Println(color.HiYellowString("[failed to get message in GetMessage(%s)] %s", msID, err))
 		return nil
 	}
 
@@ -39,7 +40,7 @@ func GetMessage(msID string) *Message {
 
 	jst, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
-		cp.CPrintf("[failed to load location in GetMessage(%s)] %s", msID, err)
+		log.Println(color.HiYellowString("[failed to load location in GetMessage(%s)] %s", msID, err))
 		return nil
 	}
 
@@ -61,6 +62,6 @@ func (ms *Message) Stamp(stamp string) {
 		PostMessageStampRequest(*traq.NewPostMessageStampRequestWithDefaults()).Execute()
 
 	if err != nil {
-		cp.CPrintf("[failed to put stamp in Stamp()] %s\nms = %v", err, ms)
+		log.Println(color.HiYellowString("[failed to put stamp in Stamp()] %s\nms = %v", err, ms))
 	}
 }
