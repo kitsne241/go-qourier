@@ -28,12 +28,12 @@ func GetMessage(msID string) *Message {
 		return nil
 	}
 
-	ch := IDGetChannel(resp.ChannelId)
+	ch := GetChannel(resp.ChannelId)
 	if ch == nil {
 		return nil
 	}
 
-	user := IDGetUser(resp.UserId)
+	user := GetUser(resp.UserId)
 	if user == nil {
 		return nil
 	}

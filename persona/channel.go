@@ -16,10 +16,10 @@ type Channel struct {
 	Parent *Channel
 }
 
-func IDGetChannel(chID string) *Channel {
+func GetChannel(chID string) *Channel {
 	resp, _, err := Wsbot.API().ChannelApi.GetChannel(context.Background(), chID).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to get channel in IDGetChannel(%s)] %s", chID, err))
+		log.Println(color.HiYellowString("[failed to get channel in GetChannel(%s)] %s", chID, err))
 		return nil
 	}
 
@@ -28,7 +28,7 @@ func IDGetChannel(chID string) *Channel {
 
 	parentID := resp.ParentId.Get()
 	if parentID != nil { // resp.ParentId.IsSet() は常に true のようなので…
-		parent = IDGetChannel(*parentID) // 親チャンネルを得る
+		parent = GetChannel(*parentID) // 親チャンネルを得る
 		if parent == nil {
 			return nil
 		}
@@ -45,9 +45,9 @@ func IDGetChannel(chID string) *Channel {
 	}
 }
 
-func GetChannel(path string) *Channel {
+func PathGetChannel(path string) *Channel {
 	// チャンネルの path（"gps/times/kitsnegra" とか）から *Channel 型を得る
-	return IDGetChannel(channelPathID[path])
+	return GetChannel(channelPathID[path])
 }
 
 func (ch *Channel) GetChildren() []*Channel {
@@ -62,7 +62,7 @@ func (ch *Channel) GetChildren() []*Channel {
 
 	children := []*Channel{}
 	for _, child := range resp.Children {
-		if ch := IDGetChannel(child); ch != nil {
+		if ch := GetChannel(child); ch != nil {
 			children = append(children, ch)
 		}
 	}
@@ -119,7 +119,7 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 	for i, message := range respAll {
 		_, exists := userDic[message.UserId]
 		if !exists {
-			user := IDGetUser(message.UserId)
+			user := GetUser(message.UserId)
 			if user != nil {
 				userDic[message.UserId] = user
 			}

@@ -14,10 +14,10 @@ type User struct {
 	IsBot bool
 }
 
-func IDGetUser(usID string) *User {
+func GetUser(usID string) *User {
 	resp, _, err := Wsbot.API().UserApi.GetUser(context.Background(), usID).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to get user in IDGetUser(%d)] %s", usID, err))
+		log.Println(color.HiYellowString("[failed to get user in GetUser(%d)] %s", usID, err))
 		return nil
 	}
 
@@ -29,9 +29,9 @@ func IDGetUser(usID string) *User {
 	}
 }
 
-func GetUser(name string) *User {
+func NameGetUser(name string) *User {
 	// ユーザー名（"kitsne" とか）から *User 型を得る
-	return IDGetUser(userID[name])
+	return GetUser(userID[name])
 }
 
 func GetMe() *User {
