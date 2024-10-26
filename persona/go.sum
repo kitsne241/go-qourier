@@ -6,6 +6,8 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
+github.com/kitsne241/go-qourier/cprint v0.0.0-20241025123221-8424e7a74410 h1:GThK6YYvgUM89PyDeLGi2iuBp+Wte1nwtps4B9k2a/o=
+github.com/kitsne241/go-qourier/cprint v0.0.0-20241025123221-8424e7a74410/go.mod h1:UD/feCokDKGaSuYo2lS8XLCk9rauHDpjtQ+VtF3W52U=
 github.com/traPtitech/go-traq v0.0.0-20240725071454-97c7b85dc879 h1:kkMhrXZXa7aP57ay31a3AydSPcDU1K73vXRYrSPs+P8=
 github.com/traPtitech/go-traq v0.0.0-20240725071454-97c7b85dc879/go.mod h1:7yJs1m/ddCG39XF78GA8FrXqyc4fNPfHp8BSLjMVMY8=
 github.com/traPtitech/traq-ws-bot v1.2.1 h1:DYXrVsInXAqWExltqRCvg3o0KYa2EZkaRc2Q7Gr+lzM=

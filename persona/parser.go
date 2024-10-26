@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-// Syntax についてはたとえばこんな感じ。厳密性だいじに
-
-// "%s %d:%d - %d:%d\n"%s"\n```%x\n%s\n```"
-
 // %s は文字列。次の要素との間（あるいは終わりまで）にある文字列がヒットするまで延々と読む
 // %d は数字。ただし、一度 %s として得た文字列を数字に変換するだけなのでエラーになる場合がある
 // %x は無視する（変数を用意しない）場所。読み方の規則は %s と同じ
@@ -22,44 +18,41 @@ func (command *Command) parseExecute(ms *Message, optionOrigin string) error {
 	option := optionOrigin + "\n"
 	args := []any{}
 
-	// 与えられた文字列で最初に %s %d %x のいずれかが登場する地点を返す関数
-	// なければ syntax の末尾の位置を返す
+	specifier := byte('x')
 
-	receiving := byte('x')
-
-	// syntax = "%s %d:%d"
-	// option = "Sunday 15:00"
+	// たとえば syntax = "%s %d:%d %x %d:%d" とすると
+	// option = "Sunday 15:00 - 16:00" とか "Monday 21:00 から 23:00" とかをうまく読める
 
 	for {
-		posSp := nextSpecifier(syntax)
-		divider := syntax[:posSp]
-		posDv := strings.Index(option, divider)
-		if posDv == -1 {
+		specPos := nextSpecifier(syntax)
+		divider := syntax[:specPos]
+		divPos := strings.Index(option, divider)
+		if divPos == -1 {
 			return fmt.Errorf("too few arguments")
 		}
-		arg := option[:posDv]
+		arg := option[:divPos]
 
-		// syntax 内の次の指定子の場所を得て、そこまでの部分に一致する位置を option でも探して posDv とする
-		// option 内の posDv までの部分が次の arg である。見つからなければエラーを返す
+		// syntax 内の次の指定子の場所を得て、そこまでの部分に一致する位置を option でも探して divPos とする
+		// option 内の divPos までの部分が次の arg である。見つからなければエラーを返す
 
-		switch receiving {
+		switch specifier {
 		case 's':
 			args = append(args, arg)
 		case 'd':
 			argNum, err := strconv.Atoi(arg)
 			if err != nil {
-				return fmt.Errorf("%%d for non-numeric arguments: %w", err)
+				return fmt.Errorf("%%d for non-numeric arguments: %w", err) // エスケープ
 			}
 			args = append(args, argNum)
 		}
 
-		if posSp == len(syntax) {
+		if specPos == len(syntax) {
 			break
 		}
 
-		receiving = syntax[(posSp + 1)]          // 次の指定子を取得
-		syntax = syntax[(posSp + 2):]            // syntax の頭を切り落とす
-		option = option[(posDv + len(divider)):] // option の頭を切り落とす
+		specifier = syntax[specPos+1]         // 次の指定子を 's' 'd' 'x' などの byte 型で取得
+		syntax = syntax[specPos+2:]           // syntax の頭を切り落とす
+		option = option[divPos+len(divider):] // option の頭を切り落とす
 	}
 
 	return command.action(ms, args...)
@@ -67,6 +60,7 @@ func (command *Command) parseExecute(ms *Message, optionOrigin string) error {
 
 func varadic(command *Command) (func(*Message, ...any) error, error) {
 	// 関数を受け取り、多変数引数関数を返す
+
 	fnValue := reflect.ValueOf(command.Action)
 	fnType := fnValue.Type()
 
@@ -86,7 +80,7 @@ func varadic(command *Command) (func(*Message, ...any) error, error) {
 
 	// func が *Message 型の引数を最初に持つことを確認
 	if fnType.NumIn() < 1 || fnType.In(0) != reflect.TypeOf((*Message)(nil)) {
-		return nil, fmt.Errorf("first argument of '%s' must be *Message", command.name)
+		return nil, fmt.Errorf("argument 1 of '%s' must be *Message", command.name)
 	}
 
 	// command.Syntax と照合し、第二引数以降の型の合致を確認
@@ -94,9 +88,8 @@ func varadic(command *Command) (func(*Message, ...any) error, error) {
 	syntax := command.Syntax
 	receiving := byte('x')
 
-	i := 1
+	i := 1 // *Message の分
 	for {
-		posSp := nextSpecifier(syntax)
 		switch receiving {
 		case 's':
 			if fnType.NumIn() == i {
@@ -116,12 +109,13 @@ func varadic(command *Command) (func(*Message, ...any) error, error) {
 			i++
 		}
 
-		if posSp == len(syntax) {
+		specPos := nextSpecifier(syntax)
+		if specPos == len(syntax) {
 			break
 		}
 
-		receiving = syntax[(posSp + 1)] // 次の指定子を取得
-		syntax = syntax[(posSp + 2):]   // syntax の頭を切り落とす
+		receiving = syntax[(specPos + 1)] // 次の指定子を取得
+		syntax = syntax[(specPos + 2):]   // syntax の頭を切り落とす
 	}
 
 	if fnType.NumIn() != i {
@@ -141,15 +135,17 @@ func varadic(command *Command) (func(*Message, ...any) error, error) {
 
 		result := fnValue.Call(callArgs)
 
-		// エラーならばエラーを、nil ならば nil を返す
 		if result[0].IsNil() {
-			return nil
+			return nil // エラーならばエラーを、nil ならば nil を返す
 		}
 		return result[0].Interface().(error)
 	}, nil
 }
 
 func nextSpecifier(syntax string) int {
+	// 与えられた文字列で最初に %s %d %x のいずれかが登場する地点を返す関数
+	// なければ syntax の末尾の位置を返す
+
 	pos := strings.Index(syntax, "%s")
 	if strings.Contains(syntax, "%d") && ((strings.Index(syntax, "%d") < pos) || (pos == -1)) {
 		pos = strings.Index(syntax, "%d")

@@ -16,7 +16,7 @@ type User struct {
 func GetUser(usID string) *User {
 	resp, _, err := Wsbot.API().UserApi.GetUser(context.Background(), usID).Execute()
 	if err != nil {
-		cp.CPrintf("[failed to get user in GetUser(%d)] %s", usID, err) // すごい文面だ…
+		cp.CPrintf("[failed to get user in GetUser(%d)] %s", usID, err)
 		return nil
 	}
 
@@ -27,6 +27,10 @@ func GetUser(usID string) *User {
 		IsBot: resp.Bot,
 	}
 }
+
+// func GetUserFromName(name string) *User {
+// 	// 工事中
+// }
 
 func GetMe() *User {
 	resp, _, err := Wsbot.API().MeApi.GetMe(context.Background()).Execute()

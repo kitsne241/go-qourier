@@ -37,7 +37,7 @@ func init() {
 	godotenv.Load(".env")
 }
 
-func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*Message, *Command, error)) error {
+func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*Message, *Command, error)) {
 	// onMessage : 受け取ったメッセージがコマンドでない場合に呼ばれる関数
 	// onFail    : 何らかの原因でコマンドの実行が失敗したときに呼ばれる関数
 
@@ -46,7 +46,7 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		command.name = name
 		command.action, err = varadic(command)
 		if err != nil {
-			cp.CPanic("[dfailed to register command %s] %s", name, err)
+			cp.CPanic("[failed to register command '%s'] %s", name, err)
 		}
 	}
 	// Command 型の配列である引数 commands から {関数名: 実行関数} の辞書 commandsDic を得る
@@ -63,10 +63,10 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		cp.CPanic("[failed to build a bot]")
 	}
 
-	Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
-		mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", Me.Name, Me.ID)
-		// メッセージ本文などではメンションは JSON 形式の文字列に置き換えられている
+	mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", Me.Name, Me.ID)
+	// メッセージ本文などではメンションは JSON 形式の文字列に置き換えられている
 
+	Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
 		ms := GetMessage(p.Message.ID)
 		if ms == nil {
 			return
@@ -75,37 +75,31 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		content := strings.Replace(ms.Text, mention, "@"+Me.Name, 1)
 		elements := strings.SplitN(content, " ", 3)
 		// 最初の 2 つの半角スペースを見つけて最大 3 つに切り分ける。@BOT_name / コマンド / 引数
+		elements = append(elements, make([]string, 3-len(elements))...)
+		// elements の長さが常に 3 になるように規格化
 
-		if len(elements) == 1 { // elements の長さが 1 なら少なくともコマンドではないのでメッセージとして処理
-			if onMessage != nil {
-				onMessage(ms)
+		command, exists := commands[elements[1]]
+		if (elements[0] == "@"+Me.Name) && exists {
+			// Bot に対するメンションから始まり、かつコマンド名が次に来るならコマンドを実行
+
+			if err = command.parseExecute(ms, elements[2]); err != nil {
+				if onFail != nil {
+					onFail(ms, command, err)
+				} else {
+					cp.CPrintf("[failed to run command '%s'] %s", elements[1], err)
+				}
 			}
 		} else {
-			if len(elements) == 2 {
-				elements = append(elements, "") // elements の長さが常に 3 になるように規格化
-			}
-			command, exists := commands[elements[1]]
-			if (elements[0] == "@"+Me.Name) && exists {
-				// Bot に対するメンションから始まり、かつコマンド名が次に来るならコマンドを実行
-
-				if err = command.parseExecute(ms, elements[2]); err != nil {
-					if onFail != nil {
-						onFail(ms, command, err)
-					} else {
-						cp.CPrintf("[failed to run command %s] %s", elements[2], err)
-					}
-				}
-			} else { // 登録コマンドの名前に一致するものがなければ、単にメッセージとして受け取った時の関数を実行
-				if onMessage != nil {
-					onMessage(ms)
-				}
+			// 登録コマンドの名前に一致するものがない、あるいはそもそも elements の初期の長さが 1 のとき
+			// 単にメッセージとして受け取った時の関数を実行
+			if onMessage != nil {
+				onMessage(ms)
 			}
 		}
 	})
 
 	stampID = getAllStamps()
 	log.Printf("[initialized bot]")
-	return nil
 }
 
 func Start() error {
@@ -116,7 +110,7 @@ func getAllStamps() map[string]string {
 	resp, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
 	if err != nil {
 		cp.CPrintf("[failed to get stamps in GetAllStamps()] %s", err)
-		return nil
+		return map[string]string{}
 	}
 
 	result := make(map[string]string)

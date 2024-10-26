@@ -17,7 +17,7 @@ type Message struct {
 	Author    *User
 }
 
-// 基本的に error は出さずに nil あるいは空の配列として伝える方針
+// 基本的に error は出さずに異常ログのみ、呼び出し元には nil あるいは空の配列として伝える方針
 // 適切な引数による実行の上で API との接続で問題が生じた場合はエラーメッセージがエラーの原因に直接結びつかない気がするため
 
 func GetMessage(msID string) *Message {

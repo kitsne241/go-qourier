@@ -28,7 +28,7 @@ func GetChannel(chID string) *Channel {
 	parentID := resp.ParentId.Get()
 	if parentID != nil { // resp.ParentId.IsSet() は常に true のようなので…
 		parent = GetChannel(*parentID) // 親チャンネルを得る
-		if parent != nil {
+		if parent == nil {
 			return nil
 		}
 		path = parent.Path + "/" + resp.Name
@@ -44,6 +44,10 @@ func GetChannel(chID string) *Channel {
 	}
 }
 
+// func GetChannelFromPath(path string) *Channel {
+// 	// 工事中
+// }
+
 func (ch *Channel) GetChildren() []*Channel {
 	if ch == nil {
 		return []*Channel{}
@@ -56,8 +60,7 @@ func (ch *Channel) GetChildren() []*Channel {
 
 	children := []*Channel{}
 	for _, child := range resp.Children {
-		ch := GetChannel(child)
-		if ch != nil {
+		if ch := GetChannel(child); ch != nil {
 			children = append(children, ch)
 		}
 	}
@@ -153,7 +156,7 @@ func (ch *Channel) Join() {
 	if ch == nil {
 		return
 	}
-	_, err := Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), bot.ID).
+	_, err := Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), Me.ID).
 		PostBotActionJoinRequest(*traq.NewPostBotActionJoinRequest(ch.ID)).Execute()
 	if err != nil {
 		cp.CPrintf("[failed to join in Join()] %s\nch = %v", err, ch)
@@ -164,7 +167,7 @@ func (ch *Channel) Leave() {
 	if ch == nil {
 		return
 	}
-	_, err := Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), bot.ID).
+	_, err := Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), Me.ID).
 		PostBotActionLeaveRequest(*traq.NewPostBotActionLeaveRequest(ch.ID)).Execute()
 	if err != nil {
 		cp.CPrintf("[failed to leave in Leave()] %s\nch = %v", err, ch)
