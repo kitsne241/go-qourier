@@ -127,8 +127,6 @@ func getAllInfo() {
 		stampID[stamp.Name] = stamp.Id
 	}
 
-	log.Println(stampID["tada"])
-
 	log.Println("[collecting users...]")
 
 	users, _, err := Wsbot.API().UserApi.GetUsers(context.Background()).IncludeSuspended(true).Execute()
