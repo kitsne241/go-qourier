@@ -1,4 +1,5 @@
 ACCESS_TOKEN=""
+BOT_ID=""  # Bot User ID じゃないほう！
 
 NS_MARIADB_USER="user"
 NS_MARIADB_PASSWORD="userpass"

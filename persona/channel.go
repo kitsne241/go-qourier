@@ -3,6 +3,7 @@ package persona
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"github.com/fatih/color"
@@ -165,10 +166,14 @@ func (ch *Channel) Join() {
 	if ch == nil {
 		return
 	}
-	_, err := Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), Me.ID).
+	// Bot のユーザーとしての ID と BOT_ID とは別もの
+
+	_, err := Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), os.Getenv("BOT_ID")).
 		PostBotActionJoinRequest(*traq.NewPostBotActionJoinRequest(ch.ID)).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to join into #%s in Join()] %s", ch.Path, err))
+		log.Println(color.HiYellowString(
+			"[failed to join into #%s in Join()] make sure BOT_ID is set!: %s", ch.Path, err,
+		))
 	}
 }
 
@@ -176,9 +181,11 @@ func (ch *Channel) Leave() {
 	if ch == nil {
 		return
 	}
-	_, err := Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), Me.ID).
+	_, err := Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), os.Getenv("BOT_ID")).
 		PostBotActionLeaveRequest(*traq.NewPostBotActionLeaveRequest(ch.ID)).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to leave from #%s in Leave()] %s", ch.Path, err))
+		log.Println(color.HiYellowString(
+			"[failed to leave from #%s in Leave()] make sure BOT_ID is set!: %s", ch.Path, err,
+		))
 	}
 }
