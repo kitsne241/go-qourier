@@ -106,25 +106,31 @@ func SetUp(
 	})
 
 	Wsbot.OnPing(func(p *payload.Ping) {
+		log.Println(color.GreenString("[collecting stamps...]"))
 		getAllStamps()
+		log.Println(color.GreenString("[collecting users...]"))
 		getAllUsers()
+		log.Println(color.GreenString("[collecting channels...]"))
 		getAllChannels()
 
 		if onRefresh != nil {
 			onRefresh()
 		}
-		log.Printf("[refreshed bot]")
+		log.Println("[refreshed bot]")
 	})
 	// 定期的に呼ばれる Ping で Bot のリフレッシュをしたり
 
+	log.Println(color.GreenString("[collecting stamps...]"))
 	getAllStamps()
+	log.Println(color.GreenString("[collecting users...]"))
 	getAllUsers()
+	log.Println(color.GreenString("[collecting channels...]"))
 	getAllChannels()
 
 	if onRefresh != nil {
 		onRefresh()
 	}
-	log.Printf("[initialized bot]")
+	log.Println(color.GreenString("[initialized bot]"))
 }
 
 func Start() error {

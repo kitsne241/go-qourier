@@ -42,7 +42,7 @@ func SetUp(initial any) error {
 
 	jst, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
-		log.Printf(color.HiYellowString("[failed to load location] %s", err))
+		log.Println(color.HiYellowString("[failed to load location] %s", err))
 		panic(color.HiRedString("[failed to initialize database]"))
 	}
 
@@ -65,13 +65,13 @@ func SetUp(initial any) error {
 	}
 
 	if _, err = cps.Db.Exec(`CREATE TABLE IF NOT EXISTS config (json JSON);`); err != nil {
-		log.Printf(color.HiYellowString("[failed to create table] %s", err))
+		log.Println(color.HiYellowString("[failed to create table] %s", err))
 		panic(color.HiRedString("[failed to initialize database] make sure your container is running!"))
 	}
 
 	var count int // すでに存在するレコードの数
 	if err := cps.Db.Get(&count, `SELECT COUNT(*) FROM config`); err != nil {
-		log.Printf(color.HiYellowString("[failed to get count of table] %s", err))
+		log.Println(color.HiYellowString("[failed to get count of table] %s", err))
 		panic(color.HiRedString("[failed to initialize database]"))
 	}
 
@@ -96,7 +96,7 @@ func SetUp(initial any) error {
 		}
 	}
 
-	log.Printf("[initialized database]")
+	log.Println(color.GreenString("[initialized database]"))
 	return nil
 }
 
