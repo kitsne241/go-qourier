@@ -31,7 +31,12 @@ func GetUser(usID string) *User {
 
 func NameGetUser(name string) *User {
 	// ユーザー名（"kitsne" とか）から *User 型を得る
-	return GetUser(userID[name])
+	usID, exists := userNameID[name]
+	if !exists {
+		log.Println(color.HiYellowString("[failed to get user in NameGetUser(\"%s\")] not found such user", name))
+		return nil
+	}
+	return GetUser(usID)
 }
 
 func GetMe() *User {

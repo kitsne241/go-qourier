@@ -29,8 +29,8 @@ var Wsbot *traqwsbot.Bot
 
 var Me *User
 
-var stampID = map[string]string{}       // "tada" -> "8bfd4032-18d1-477f-894c-08855b46fd2f"
-var userID = map[string]string{}        // "kitsne" -> "a77f54f2-a7dc-4dab-ad6d-5c5df7e9ecfa"
+var stampNameID = map[string]string{}   // "tada" -> "8bfd4032-18d1-477f-894c-08855b46fd2f"
+var userNameID = map[string]string{}    // "kitsne" -> "a77f54f2-a7dc-4dab-ad6d-5c5df7e9ecfa"
 var channelPathID = map[string]string{} // "gps/times/kitsnegra" -> "019275db-f2fd-7922-81c9-956aab18612d"
 
 // main.go で使うサブパッケージの関数は全て大文字から始める。小文字スタートのままではインポートが失敗する
@@ -122,9 +122,9 @@ func getAllInfo() {
 		log.Println(color.HiYellowString("[failed to get stamps in getAllInfo()] %s", err))
 	}
 
-	stampID = map[string]string{}
+	stampNameID = map[string]string{}
 	for _, stamp := range stamps { // resp にはtraQ の全てのスタンプの情報が入っている
-		stampID[stamp.Name] = stamp.Id
+		stampNameID[stamp.Name] = stamp.Id
 	}
 
 	log.Println("[collecting users...]")
@@ -134,9 +134,9 @@ func getAllInfo() {
 		log.Println(color.HiYellowString("[failed to get users in getAllInfo()] %s", err))
 	}
 
-	userID = map[string]string{}
+	userNameID = map[string]string{}
 	for _, user := range users { // resp にはtraQ の全てのスタンプの情報が入っている
-		userID[user.Name] = user.Id
+		userNameID[user.Name] = user.Id
 	}
 
 	// 一度に何百回も API にアクセスするとエラーを生じがちなので

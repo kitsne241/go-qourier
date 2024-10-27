@@ -46,8 +46,13 @@ func GetChannel(chID string) *Channel {
 }
 
 func PathGetChannel(path string) *Channel {
+	chID, exists := channelPathID[path]
+	if !exists {
+		log.Println(color.HiYellowString("[failed to get user in NameGetUser(\"%s\")] not found such channel", path))
+		return nil
+	}
 	// チャンネルの path（"gps/times/kitsnegra" とか）から *Channel 型を得る
-	return GetChannel(channelPathID[path])
+	return GetChannel(chID)
 }
 
 func (ch *Channel) GetChildren() []*Channel {
@@ -56,7 +61,7 @@ func (ch *Channel) GetChildren() []*Channel {
 	}
 	resp, _, err := Wsbot.API().ChannelApi.GetChannel(context.Background(), ch.ID).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to get children in GetChildren()] %s\nch = %v", err, ch))
+		log.Println(color.HiYellowString("[failed to get children of #%s in GetChildren()] %s", ch.Path, err))
 		return []*Channel{}
 	}
 
@@ -84,7 +89,9 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 		resp, _, err := Wsbot.API().ChannelApi.GetMessages(context.Background(), ch.ID).
 			Limit(int32(150)).Offset(int32(150 * i)).Execute()
 		if err != nil {
-			log.Println(color.HiYellowString("[failed to get recent messages in GetRecentMessages(%d)] %s\nch = %v", limit, err, ch))
+			log.Println(color.HiYellowString(
+				"[failed to get recent messages on #%s in GetRecentMessages(%d)] %s", ch.Path, limit, err,
+			))
 			return []*Message{}
 		}
 		for j, res := range resp {
@@ -104,7 +111,7 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 
 	jst, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to load location in GetRecentMessages(%d)] %s\nch = %v", limit, err))
+		log.Println(color.HiYellowString("[failed to load location in GetRecentMessages(%d)] %s", limit, err))
 		return nil
 	}
 
@@ -150,7 +157,7 @@ func (ch *Channel) Send(content string) {
 	// _, _, err := apiClient.MessageApi.以下略
 
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to send message in Send()] %s\nch = %v", err, ch))
+		log.Println(color.HiYellowString("[failed to send message on #%s in Send()] %s", ch.Path, err))
 	}
 }
 
@@ -161,7 +168,7 @@ func (ch *Channel) Join() {
 	_, err := Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), Me.ID).
 		PostBotActionJoinRequest(*traq.NewPostBotActionJoinRequest(ch.ID)).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to join in Join()] %s\nch = %v", err, ch))
+		log.Println(color.HiYellowString("[failed to join into #%s in Join()] %s", ch.Path, err))
 	}
 }
 
@@ -172,6 +179,6 @@ func (ch *Channel) Leave() {
 	_, err := Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), Me.ID).
 		PostBotActionLeaveRequest(*traq.NewPostBotActionLeaveRequest(ch.ID)).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to leave in Leave()] %s\nch = %v", err, ch))
+		log.Println(color.HiYellowString("[failed to leave from #%s in Leave()] %s", ch.Path, err))
 	}
 }
