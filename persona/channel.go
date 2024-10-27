@@ -163,6 +163,9 @@ func (ch *Channel) Send(content string) {
 }
 
 func (ch *Channel) Join() {
+	// ここでの Join は「このチャンネルにおける自身へのメンション以外の投稿イベントを購読する」こと
+	// チャンネルへの投稿、チャンネルの直近の投稿の取得、メンションへの反応などはチャンネルに Join していなくても可能
+
 	if ch == nil {
 		return
 	}
