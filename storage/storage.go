@@ -36,7 +36,7 @@ func init() {
 	// NeoShowcase ではもとから環境変数が設定されているのでエラーをスルーして処理を続行
 }
 
-func SetUp[T any](initial T) error {
+func SetUp[T any](initial T) {
 	// 引数はデータベースに保存するデータの初期値のポインタ
 	// データベースに何も保存されていない最初の状態や異常時にのみこの値を用いる
 
@@ -97,7 +97,6 @@ func SetUp[T any](initial T) error {
 	}
 
 	log.Println(color.GreenString("[initialized database]"))
-	return nil
 }
 
 func Save[T any](config T) error {
