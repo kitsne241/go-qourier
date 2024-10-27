@@ -25,6 +25,8 @@ type Command struct {
 	action func(*Message, ...any) error // Action を可変引数化した関数。実際に実行されるのはこっち
 }
 
+type Commands map[string]*Command
+
 var Wsbot *traqwsbot.Bot
 
 var Me *User
@@ -40,10 +42,9 @@ func init() {
 }
 
 func SetUp(
-	commands map[string]*Command,
+	commands Commands,
 	onMessage func(*Message),
 	onFail func(*Message, *Command, error),
-	onRefresh func(),
 ) {
 	// onMessage : 受け取ったメッセージがコマンドでない場合に呼ばれる関数
 	// onFail    : 何らかの原因でコマンドの実行が失敗したときに呼ばれる関数
@@ -106,30 +107,18 @@ func SetUp(
 	})
 
 	Wsbot.OnPing(func(p *payload.Ping) {
-		log.Println(color.GreenString("[collecting stamps...]"))
 		getAllStamps()
-		log.Println(color.GreenString("[collecting users...]"))
 		getAllUsers()
-		log.Println(color.GreenString("[collecting channels...]"))
 		getAllChannels()
 
-		if onRefresh != nil {
-			onRefresh()
-		}
 		log.Println("[refreshed bot]")
 	})
 	// 定期的に呼ばれる Ping で Bot のリフレッシュをしたり
 
-	log.Println(color.GreenString("[collecting stamps...]"))
 	getAllStamps()
-	log.Println(color.GreenString("[collecting users...]"))
 	getAllUsers()
-	log.Println(color.GreenString("[collecting channels...]"))
 	getAllChannels()
 
-	if onRefresh != nil {
-		onRefresh()
-	}
 	log.Println(color.GreenString("[initialized bot]"))
 }
 

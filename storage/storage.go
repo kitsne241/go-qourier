@@ -36,8 +36,8 @@ func init() {
 	// NeoShowcase ではもとから環境変数が設定されているのでエラーをスルーして処理を続行
 }
 
-func SetUp(initial any) error {
-	// 引数はデータベースに保存するデータの初期値
+func SetUp[T any](initial T) error {
+	// 引数はデータベースに保存するデータの初期値のポインタ
 	// データベースに何も保存されていない最初の状態や異常時にのみこの値を用いる
 
 	jst, err := time.LoadLocation("Asia/Tokyo")
@@ -100,7 +100,7 @@ func SetUp(initial any) error {
 	return nil
 }
 
-func Save(config any) error {
+func Save[T any](config T) error {
 	configJson, err := json.Marshal(config)
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
@@ -116,27 +116,29 @@ func Save(config any) error {
 	return nil // 必ず error 型の返り値を返す必要があるので nil を返す（nil は error 型か…？）
 }
 
-func Load(address any) error {
+func Load[T any]() (T, error) {
 	var record struct { // データベースに保存されているレコードを受け取るための型
 		Json string `json:"json"`
 	}
 
+	var config T // エラーの場合の返り値
+
 	if err := cps.Db.Get(&record, "SELECT * FROM config"); err != nil {
-		return fmt.Errorf("failed to get data from database: %w", err)
+		return config, fmt.Errorf("failed to get data from database: %w", err)
 	}
 	// record にデータベースのレコードの値を写し取って、
 
-	if err := json.Unmarshal([]byte(record.Json), address); err != nil {
-		return fmt.Errorf("failed to unmarshal JSON: %w", err)
+	if err := json.Unmarshal([]byte(record.Json), &config); err != nil {
+		return config, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
-	// JSON をデコードした address に参照を返す
+	// JSON をデコードして config に代入
 
-	return nil
+	return config, nil
 }
 
 func With[T any](action func(config *T)) error {
-	var conf T
-	if err := Load(&conf); err != nil {
+	conf, err := Load[T]()
+	if err != nil {
 		return fmt.Errorf("in with: %w", err)
 	}
 
