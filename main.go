@@ -11,7 +11,7 @@ func main() {
 	prs.SetUp(map[string]*prs.Command{
 		"set": {Action: set, Syntax: "%s %d:%d"}, // @BOT_name set Sunday 21:00
 		"get": {Action: get, Syntax: ""},         // @BOT_name get
-	}, onMessage, nil)
+	}, onMessage, nil, nil)
 
 	srg.SetUp(nil) // データベースに接続
 

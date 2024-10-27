@@ -39,7 +39,12 @@ func init() {
 	godotenv.Load(".env")
 }
 
-func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*Message, *Command, error)) {
+func SetUp(
+	commands map[string]*Command,
+	onMessage func(*Message),
+	onFail func(*Message, *Command, error),
+	onRefresh func(),
+) {
 	// onMessage : 受け取ったメッセージがコマンドでない場合に呼ばれる関数
 	// onFail    : 何らかの原因でコマンドの実行が失敗したときに呼ばれる関数
 
@@ -100,10 +105,25 @@ func SetUp(commands map[string]*Command, onMessage func(*Message), onFail func(*
 		}
 	})
 
-	getAllInfo()
-	// 初期化時に一回のみ実行
-	// Bot は定期的に再起動するのでおそらく更新の問題が顕在化することはないはず…
+	Wsbot.OnPing(func(p *payload.Ping) {
+		getAllStamps()
+		getAllUsers()
+		getAllChannels()
 
+		if onRefresh != nil {
+			onRefresh()
+		}
+		log.Printf("[refreshed bot]")
+	})
+	// 定期的に呼ばれる Ping で Bot のリフレッシュをしたり
+
+	getAllStamps()
+	getAllUsers()
+	getAllChannels()
+
+	if onRefresh != nil {
+		onRefresh()
+	}
 	log.Printf("[initialized bot]")
 }
 
@@ -114,41 +134,39 @@ func Start() error {
 	return Wsbot.Start()
 }
 
-func getAllInfo() {
-	log.Println("[collecting stamps...]")
-
+func getAllStamps() {
 	stamps, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to get stamps in getAllInfo()] %s", err))
+		log.Println(color.HiYellowString("[failed to get stamps in getAllStamps()] %s", err))
 	}
 
 	stampNameID = map[string]string{}
 	for _, stamp := range stamps { // resp にはtraQ の全てのスタンプの情報が入っている
 		stampNameID[stamp.Name] = stamp.Id
 	}
+}
 
-	log.Println("[collecting users...]")
-
+func getAllUsers() {
 	users, _, err := Wsbot.API().UserApi.GetUsers(context.Background()).IncludeSuspended(true).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to get users in getAllInfo()] %s", err))
+		log.Println(color.HiYellowString("[failed to get users in getAllUsers()] %s", err))
 	}
 
 	userNameID = map[string]string{}
 	for _, user := range users { // resp にはtraQ の全てのスタンプの情報が入っている
 		userNameID[user.Name] = user.Id
 	}
+}
 
+func getAllChannels() {
 	// 一度に何百回も API にアクセスするとエラーを生じがちなので
 	// たった一度の API アクセスからチャンネルの path と ID の対応表を作りたい
 	// GetChannels によって全てのパブリックチャンネルについて チャンネルのID・親チャンネルのID・チャンネルの名前 の 3 つが分かるので、
 	// 親子の関連付けからチャンネルの親子関係のグラフを作成し、それぞれのチャンネルの名前を末尾まで継承してパスを作る
 
-	log.Println("[collecting channels...]")
-
 	channels, _, err := Wsbot.API().ChannelApi.GetChannels(context.Background()).IncludeDm(false).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to get channels in getAllInfo()] %s", err))
+		log.Println(color.HiYellowString("[failed to get channels in getAllChannels()] %s", err))
 	}
 
 	tree := map[string]string{}
