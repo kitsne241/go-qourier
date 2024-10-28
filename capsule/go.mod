@@ -1,4 +1,4 @@
-module github.com/kitsne241/go-qourier/storage
+module github.com/kitsne241/go-qourier/capsule
 
 go 1.22.6
 

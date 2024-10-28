@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	cps "github.com/kitsne241/go-qourier/capsule"
 	prs "github.com/kitsne241/go-qourier/persona"
-	srg "github.com/kitsne241/go-qourier/storage"
 )
 
 type Date struct {
@@ -19,20 +19,20 @@ func main() {
 		"get": {Action: get, Syntax: ""},         // @BOT_name get
 	}, onMessage, nil) // onMessage, onFail
 
-	srg.SetUp(Date{Day: "Sunday", Hour: 12, Min: 0}) // データベースに接続・必要に応じて初期化
+	cps.SetUp(Date{Day: "Sunday", Hour: 12, Min: 0}) // データベースに接続・必要に応じて初期化
 
 	prs.Start() // Bot を起動
 }
 
 func set(ms *prs.Message, day string, hour int, min int) error {
 	ms.Channel.Send(fmt.Sprintf("On %s %02d:%02d, right?", day, hour, min))
-	srg.Save(Date{Day: day, Hour: hour, Min: min})
+	cps.Save(Date{Day: day, Hour: hour, Min: min})
 	ms.Stamp("done-nya")
 	return nil
 }
 
 func get(ms *prs.Message) error {
-	date, _ := srg.Load[Date]()
+	date, _ := cps.Load[Date]()
 	ms.Channel.Send(fmt.Sprintf("It was on %s %02d:%02d!", date.Day, date.Hour, date.Min))
 	return nil
 }
