@@ -58,12 +58,16 @@ func (ms *Message) Stamp(stamp string) {
 	if ms == nil {
 		return
 	}
-	_, err := Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stampNameID[stamp]).
+	stampID, exists := stampNameID[stamp]
+	if !exists {
+		log.Println(color.HiYellowString("[failed to put stamp to post in Stamp(\"%s\")] stamp \"%s\" not found", stamp, stamp))
+	}
+	_, err := Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID).
 		PostMessageStampRequest(*traq.NewPostMessageStampRequestWithDefaults()).Execute()
 
 	if err != nil {
 		log.Println(color.HiYellowString(
-			"[failed to put stamp to post in Stamp()] %s\nMessage: %s @%s \"%s\"", err, ms.CreatedAt, ms.Author, ms.Text,
+			"[failed to put stamp to post in Stamp(\"%s\")] %s\nMessage: %s @%s \"%s\"", stamp, err, ms.CreatedAt, ms.Author, ms.Text,
 		))
 		// ユーザーやチャンネルと違いメッセージを一意に特定できる識別子は UUID しかないが、UUID そのものを表示させても…
 	}

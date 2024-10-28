@@ -49,7 +49,7 @@ func GetChannel(chID string) *Channel {
 func PathGetChannel(path string) *Channel {
 	chID, exists := channelPathID[path]
 	if !exists {
-		log.Println(color.HiYellowString("[failed to get user in NameGetUser(\"%s\")] not found such channel", path))
+		log.Println(color.HiYellowString("[failed to get channel in PathGetChannel(\"%s\")] not found such channel", path))
 		return nil
 	}
 	// チャンネルの path（"gps/times/kitsnegra" とか）から *Channel 型を得る
@@ -149,6 +149,10 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 func (ch *Channel) Send(content string) {
 	if ch == nil {
 		return
+	}
+	if content == "" {
+		log.Println(color.HiYellowString("[failed to send message on #%s in Send()] message is empty", ch.Path))
+		return // 空白のメッセージは 400 Bad Request で弾かれるが、原因究明の手間を省くためにエラーメッセージ付でここで弾いてしまう
 	}
 	_, _, err := Wsbot.API().MessageApi.PostMessage(context.Background(), ch.ID).
 		PostMessageRequest(traq.PostMessageRequest{Content: content}).Execute()
