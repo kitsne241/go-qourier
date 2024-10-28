@@ -23,7 +23,7 @@ import (
 	godotenv "github.com/joho/godotenv"
 )
 
-var db *sqlx.DB
+var Db *sqlx.DB
 
 func init() {
 	godotenv.Load(".env")
@@ -56,17 +56,17 @@ func SetUp[T any](initial T) {
 	// 本来ならこの storage を環境独立にするために環境変数も引数として受け取った方が良いだろうけど、
 	// データベースを使うなら大概 NeoShowcase だろうという甘い読みで引数にはしていない
 
-	if db, err = sqlx.Open("mysql", conf.FormatDSN()); err != nil { // データベースに接続
+	if Db, err = sqlx.Open("mysql", conf.FormatDSN()); err != nil { // データベースに接続
 		panic(color.HiRedString("[failed to open database] %s", err))
 	}
 
-	if _, err = db.Exec(`CREATE TABLE IF NOT EXISTS config (json JSON);`); err != nil {
+	if _, err = Db.Exec(`CREATE TABLE IF NOT EXISTS config (json JSON);`); err != nil {
 		log.Println(color.HiYellowString("[failed to create table] %s", err))
 		panic(color.HiRedString("[failed to initialize database] make sure your container is running!"))
 	}
 
 	var count int // すでに存在するレコードの数
-	if err := db.Get(&count, `SELECT COUNT(*) FROM config`); err != nil {
+	if err := Db.Get(&count, `SELECT COUNT(*) FROM config`); err != nil {
 		log.Println(color.HiYellowString("[failed to get count of table] %s", err))
 		panic(color.HiRedString("[failed to initialize database]"))
 	}
@@ -75,11 +75,11 @@ func SetUp[T any](initial T) {
 
 	if count != 1 {
 		if err := func() error {
-			if _, err := db.Exec(`TRUNCATE TABLE config`); err != nil { // テーブルを空にする
+			if _, err := Db.Exec(`TRUNCATE TABLE config`); err != nil { // テーブルを空にする
 				return fmt.Errorf("failed to truncate table %w", err)
 			}
 
-			if _, err := db.Exec(`INSERT INTO config (json) VALUES ('{}')`); err != nil {
+			if _, err := Db.Exec(`INSERT INTO config (json) VALUES ('{}')`); err != nil {
 				return fmt.Errorf("failed to insert record: %w", err)
 			}
 
@@ -102,7 +102,7 @@ func Save[T any](config T) error {
 	}
 	// json.Marshal(config) は構造体 config を JSON 形式のテキストにする
 
-	if _, err = db.Exec(`UPDATE config SET json = ?`, string(configJson)); err != nil {
+	if _, err = Db.Exec(`UPDATE config SET json = ?`, string(configJson)); err != nil {
 		return fmt.Errorf("failed to update the database: %w", err)
 	}
 	// UPDATE文は（WHERE 以下の条件にあてはまる）全てのレコードを書き換える。レコードは一つしかないので WHERE 文は不要
@@ -118,7 +118,7 @@ func Load[T any]() (T, error) {
 
 	var config T // エラーの場合の返り値
 
-	if err := db.Get(&record, "SELECT * FROM config"); err != nil {
+	if err := Db.Get(&record, "SELECT * FROM config"); err != nil {
 		return config, fmt.Errorf("failed to get data from database: %w", err)
 	}
 	// record にデータベースのレコードの値を写し取って、
