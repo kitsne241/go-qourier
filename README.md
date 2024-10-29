@@ -60,12 +60,13 @@ func onMessage(ms *prs.Message) {
 
 2. `.envTEMP` ファイルを `.env` と改名し Bot のアクセストークンと ID を入力（機密情報を Git に上げないよう注意）
 
-3. `persona` ディレクトリと `storage` ディレクトリは不要なので削除
+3. ディレクトリ `persona` と `storage`、ファイル `go.mod` と `go.sum` を削除
 
 4. Docker Desktop の起動を確認し、シェルを立ち上げ以下を実行
 
   ```shell
   go mod init リポジトリのパス  # 適宜変更
+  go get github.com/kitsne241/go-qourier@latest
   go mod tidy
   task up  # storage を使用する場合
   go run main.go
@@ -75,10 +76,12 @@ func onMessage(ms *prs.Message) {
 
 5. リポジトリに対する特別な操作は必要とせず、そのまま登録できます
 
-| Application Name | Branch | Deploy Type | Build Type | Use Database | Database |
-| :--------------: | :----: | :---------: | :--------: | :----------: | :------: |
-|      Bot 名      |  main  |   Runtime   | Buildpack  |     Yes      | MariaDB  |
+| Application Name | Branch | Deploy Type | Build Type | Use Database | Database | Start Immediately |
+| :--------------: | :----: | :---------: | :--------: | :----------: | :------: | :---------------: |
+|      Bot 名      |  main  |   Runtime   | Buildpack  |     Yes      | MariaDB  |  チェックしない   |
 
 6. 他の項目はそのままにしておいて、適当な URL を設定してアプリケーションを作成
 
 7. Settings から環境変数の設定を開き 2. で入力した Bot のアクセストークンと ID を追加
+
+8. アプリケーションを起動
