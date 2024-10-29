@@ -56,6 +56,7 @@ func Connect() {
 	if Db, err = sqlx.Open("mysql", conf.FormatDSN()); err != nil { // データベースに接続
 		panic(color.HiRedString("[failed to open database] %s", err))
 	}
+	log.Println(color.GreenString("[connected to database]"))
 }
 
 func SetUp[T any](origin T, reset bool) {
@@ -96,7 +97,7 @@ func SetUp[T any](origin T, reset bool) {
 func Save[T any](config T) error {
 	configJson, err := json.Marshal(config)
 	if err != nil {
-		return fmt.Errorf("failed to marshal config: %w", err)
+		return fmt.Errorf("failed to marshal %v: %w", config, err)
 	}
 	// json.Marshal(config) は構造体 config を JSON 形式のテキストにする
 
@@ -122,7 +123,7 @@ func Load[T any]() (T, error) {
 	// record にデータベースのレコードの値を写し取って、
 
 	if err := json.Unmarshal([]byte(record.Json), &config); err != nil {
-		return config, fmt.Errorf("failed to unmarshal JSON: %w", err)
+		return config, fmt.Errorf("failed to unmarshal %s: %w", record.Json, err)
 	}
 	// JSON をデコードして config に代入
 
