@@ -62,7 +62,7 @@ func SetUp[T any](initial T) {
 
 	if _, err = Db.Exec(`CREATE TABLE IF NOT EXISTS config (json JSON);`); err != nil {
 		log.Println(color.HiYellowString("[failed to create table] %s", err))
-		panic(color.HiRedString("[failed to initialize database] make sure your container is running!"))
+		panic(color.HiRedString("[failed to initialize database] make sure your container is ready!"))
 	}
 
 	var count int // すでに存在するレコードの数
