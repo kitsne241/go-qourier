@@ -32,10 +32,7 @@ func init() {
 	// NeoShowcase ではもとから環境変数が設定されているのでエラーをスルーして処理を続行
 }
 
-func SetUp[T any](initial T) {
-	// 引数はデータベースに保存するデータの初期値のポインタ
-	// データベースに何も保存されていない最初の状態や異常時にのみこの値を用いる
-
+func Connect() {
 	jst, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to load location] %s", err))
@@ -59,40 +56,41 @@ func SetUp[T any](initial T) {
 	if Db, err = sqlx.Open("mysql", conf.FormatDSN()); err != nil { // データベースに接続
 		panic(color.HiRedString("[failed to open database] %s", err))
 	}
+}
 
-	if _, err = Db.Exec(`CREATE TABLE IF NOT EXISTS config (json JSON);`); err != nil {
+func SetUp[T any](origin T, reset bool) {
+	// 引数はデータベースに保存するデータの初期値のポインタ
+	// データベースに何も保存されていない最初の状態や異常時にのみこの値を用いる
+
+	Connect() // データベースとの接続だけを切り出した関数
+
+	if _, err := Db.Exec(`CREATE TABLE IF NOT EXISTS config (json JSON);`); err != nil {
 		log.Println(color.HiYellowString("[failed to create table] %s", err))
-		panic(color.HiRedString("[failed to initialize database] make sure your container is ready!"))
+		panic(color.HiRedString("[failed to initialize table] make sure your container is ready!"))
 	}
 
 	var count int // すでに存在するレコードの数
 	if err := Db.Get(&count, `SELECT COUNT(*) FROM config`); err != nil {
 		log.Println(color.HiYellowString("[failed to get count of table] %s", err))
-		panic(color.HiRedString("[failed to initialize database]"))
+		panic(color.HiRedString("[failed to initialize table]"))
 	}
 
-	// すでにレコードが 1 つある場合には手を加えない（レコードの数が 0 個や 2 個の異常時のみ初期化）
+	// reset = true または count = 0 などのときにはテーブル config を初期化する
+	if (count != 1) || reset {
+		if _, err := Db.Exec(`TRUNCATE TABLE config`); err != nil { // テーブルを空にする
+			panic(color.HiRedString("[failed to empty table] %s", err))
+		}
 
-	if count != 1 {
-		if err := func() error {
-			if _, err := Db.Exec(`TRUNCATE TABLE config`); err != nil { // テーブルを空にする
-				return fmt.Errorf("failed to truncate table %w", err)
-			}
+		if _, err := Db.Exec(`INSERT INTO config (json) VALUES ('{}')`); err != nil {
+			panic(color.HiRedString("[failed to insert record into table] %s", err))
+		}
 
-			if _, err := Db.Exec(`INSERT INTO config (json) VALUES ('{}')`); err != nil {
-				return fmt.Errorf("failed to insert record: %w", err)
-			}
-
-			if err := Save(initial); err != nil {
-				return fmt.Errorf("failed to initialize record: %w", err)
-			}
-			return nil
-		}(); err != nil {
-			panic(color.HiRedString("[failed to reset database] %s", err))
+		if err := Save(origin); err != nil {
+			panic(color.HiRedString("[failed to save original data] %s", err))
 		}
 	}
 
-	log.Println(color.GreenString("[initialized database]"))
+	log.Println(color.GreenString("[initialized table]"))
 }
 
 func Save[T any](config T) error {

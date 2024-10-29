@@ -32,9 +32,8 @@ func main() {
 		"get": {Action: get, Syntax: ""},         // @BOT_name get
 	}, onMessage, nil) // onMessage, onFail
 
-	cps.SetUp(Date{Day: "Sunday", Hour: 12, Min: 0}) // データベースに接続・必要に応じて初期化
-
-	prs.Start() // Bot を起動
+	cps.SetUp(Date{Day: "Sunday", Hour: 12, Min: 0}, false) // データベースに接続・必要に応じて初期化
+	prs.Start()                                             // Bot を起動
 }
 
 func set(ms *prs.Message, day string, hour int, min int) error {
