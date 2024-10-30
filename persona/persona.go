@@ -67,7 +67,7 @@ func SetUp(
 		panic(color.HiRedString("[failed to create a new bot] %s", err))
 	}
 
-	if Me = GetMe(); Me == nil {
+	if Me = getMe(); Me == nil {
 		panic(color.HiRedString("[failed to build a bot] make sure ACCESS_TOKEN is set!"))
 	}
 

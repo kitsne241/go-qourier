@@ -130,13 +130,15 @@ func Load[T any]() (T, error) {
 	return config, nil
 }
 
-func With[T any](action func(config *T)) error {
+func With[T any](action func(config *T) error) error {
 	conf, err := Load[T]()
 	if err != nil {
 		return fmt.Errorf("in with: %w", err)
 	}
 
-	action(&conf) // 実行する関数そのものを引数に渡してソースコードをシンプルにする
+	if err := action(&conf); err != nil {
+		return err
+	} // 実行する関数そのものを引数に渡してソースコードをシンプルにする
 
 	if err := Save(conf); err != nil {
 		return fmt.Errorf("in with: %w", err)

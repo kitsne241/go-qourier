@@ -39,7 +39,7 @@ func NameGetUser(name string) *User {
 	return GetUser(usID)
 }
 
-func GetMe() *User {
+func getMe() *User {
 	resp, _, err := Wsbot.API().MeApi.GetMe(context.Background()).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get myself in GetMe()] %s", err)) // すごい文面だ…

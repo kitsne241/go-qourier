@@ -54,21 +54,23 @@ func GetMessage(msID string) *Message {
 	}
 }
 
-func (ms *Message) Stamp(stamp string) {
+func (ms *Message) Stamp(stamps ...string) {
 	if ms == nil {
 		return
 	}
-	stampID, exists := stampNameID[stamp]
-	if !exists {
-		log.Println(color.HiYellowString("[failed to put stamp to post in Stamp(\"%s\")] stamp \"%s\" not found", stamp, stamp))
-	}
-	_, err := Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID).
-		PostMessageStampRequest(*traq.NewPostMessageStampRequestWithDefaults()).Execute()
+	for _, stamp := range stamps {
+		stampID, exists := stampNameID[stamp]
+		if !exists {
+			log.Println(color.HiYellowString("[failed to put stamp to post in Stamp(\"%s\")] stamp \"%s\" not found", stamp, stamp))
+		}
+		_, err := Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID).
+			PostMessageStampRequest(*traq.NewPostMessageStampRequestWithDefaults()).Execute()
 
-	if err != nil {
-		log.Println(color.HiYellowString(
-			"[failed to put stamp to post in Stamp(\"%s\")] %s\nMessage: %s @%s \"%s\"", stamp, err, ms.CreatedAt, ms.Author, ms.Text,
-		))
-		// ユーザーやチャンネルと違いメッセージを一意に特定できる識別子は UUID しかないが、UUID そのものを表示させても…
+		if err != nil {
+			log.Println(color.HiYellowString(
+				"[failed to put stamp to post in Stamp(\"%s\")] %s\nMessage: %s @%s \"%s\"", stamp, err, ms.CreatedAt, ms.Author, ms.Text,
+			))
+			// ユーザーやチャンネルと違いメッセージを一意に特定できる識別子は UUID しかないが、UUID そのものを表示させても…
+		}
 	}
 }
