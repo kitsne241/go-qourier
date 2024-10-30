@@ -62,7 +62,7 @@ func onMessage(ms *prs.Message) {
 
 2. `.envTEMP` ファイルを `.env` と改名し Bot のアクセストークンと ID を入力（機密情報を Git に上げないよう注意）
 
-3. ディレクトリ `persona` と `capsule`、ファイル `go.mod` と `go.sum` を削除
+3. ディレクトリ `persona`・`capsule`・`docs`、ファイル `go.mod`・`go.sum`・`README.md` を削除
 
 4. Docker Desktop の起動を確認し、シェルを立ち上げ以下を実行
 
