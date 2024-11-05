@@ -17,8 +17,8 @@ Bot が実行可能なコマンドを表現する型です。関数 `SetUp` の�
 
 ```go
 type Command struct {
-	Action any
-	Syntax string
+    Action any
+    Syntax string
 }
 ```
 
@@ -43,10 +43,10 @@ traQ チャンネルを表現する型です。
 
 ```go
 type Channel struct {
-	Name   string
-	Path   string
-	ID     string
-	Parent *Channel
+    Name   string
+    Path   string
+    ID     string
+    Parent *Channel
 }
 ```
 
@@ -63,17 +63,17 @@ traQ ユーザーを表現する型です。
 
 ```go
 type User struct {
-	Nick  string
-	Name  string
-	ID    string
-	IsBot bool
+    Nick  string
+    Name  string
+    ID    string
+    IsBot bool
 }
 ```
 
 | フィールド | 説明                                       | 例          |
 | ---------- | ------------------------------------------ | ----------- |
 | **Nick**   | ユーザーの表示名                           | `"きつね"`  |
-| **Name**   | ユーザー名                                 | `"@kitsne"` |
+| **Name**   | ユーザー名。頭に @ がない形式                | `"kitsne"` |
 | **ID**     | ユーザーのもつ UUID。`Name` との混同に注意 |             |
 | **IsBot**  | ユーザー自身が Bot であるか否か            | `false`     |
 
@@ -83,12 +83,12 @@ traQ のメッセージを表現する型です。
 
 ```go
 type Message struct {
-	Channel   *Channel
-	Text      string
-	ID        string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Author    *User
+    Channel   *Channel
+    Text      string
+    ID        string
+    CreatedAt time.Time
+    UpdatedAt time.Time
+    Author    *User
 }
 ```
 
@@ -127,9 +127,9 @@ var Me *User
 
 ```go
 func SetUp(
-	commands Commands,
-	onMessage func(*Message),
-	onFail func(*Message, *Command, error),
+    commands Commands,
+    onMessage func(*Message),
+    onFail func(*Message, *Command, error),
 )
 ```
 
