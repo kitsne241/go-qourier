@@ -143,7 +143,7 @@ func SetUp(
 
 ### GetChannel
 
-与えられた引数の UUID を持つチャンネルを取得して返却します。見つからない場合は `nil` を返します。
+与えられた引数の UUID を持つチャンネルを取得して返します。見つからない場合は `nil` を返します。
 
 ```go
 func GetChannel(chID string) *Channel
@@ -151,7 +151,7 @@ func GetChannel(chID string) *Channel
 
 ### PathGetChannel
 
-与えられた引数のパス（# を除く文字列）を持つチャンネルを取得して返却します。見つからない場合は `nil` を返します。
+与えられた引数のパス（# を除く文字列）を持つチャンネルを取得して返します。見つからない場合は `nil` を返します。
 
 ```go
 func PathGetChannel(path string) *Channel
@@ -159,7 +159,7 @@ func PathGetChannel(path string) *Channel
 
 ### GetUser
 
-与えられた引数の UUID を持つユーザーを取得して返却します。見つからない場合は `nil` を返します。
+与えられた引数の UUID を持つユーザーを取得して返します。見つからない場合は `nil` を返します。
 
 ```go
 func GetUser(usID string) *User
@@ -167,7 +167,7 @@ func GetUser(usID string) *User
 
 ### NameGetUser
 
-与えられた引数の名前（@ を除く文字列）を持つユーザーを取得して返却します。見つからない場合は `nil` を返します。
+与えられた引数の名前（@ を除く文字列）を持つユーザーを取得して返します。見つからない場合は `nil` を返します。
 
 ```go
 func NameGetUser(name string) *User
@@ -175,17 +175,17 @@ func NameGetUser(name string) *User
 
 ### GetMessage
 
-与えられた引数の UUID を持つメッセージを取得して返却します。見つからない場合は `nil` を返します。
+与えられた引数の UUID を持つメッセージを取得して返します。見つからない場合は `nil` を返します。
 
 ```go
 func GetMessage(msID string) *Message
 ```
 
-## Channel 型のメソッド
+## *Channel 型のメソッド
 
 ### GetChildren
 
-子チャンネルを `[]*Channel` 型で返却します。見つからない場合は空の配列を返します。
+子チャンネルの配列を `[]*Channel` 型で返します。見つからない場合及びレシーバが `nil` である場合は空の配列を返します。
 
 ```go
 func (ch *Channel) GetChildren() []*Channel
@@ -193,7 +193,7 @@ func (ch *Channel) GetChildren() []*Channel
 
 ### GetRecentMessages
 
-チャンネルの直近の投稿を最大で `limit` 個だけ読み込んで返却します。チャンネルに投稿されたメッセージが `limit` 個未満の場合、投稿されたメッセージ全てを読み込んで返却します。
+チャンネルの直近の投稿を最大で `limit` 個だけ読み込んで返します。チャンネルに投稿されたメッセージが `limit` 個未満の場合、投稿されたメッセージ全てを読み込んで返却します。レシーバが `nil` である場合は空の配列を返します。
 
 ```go
 func (ch *Channel) GetRecentMessages(limit int) []*Message
@@ -201,7 +201,7 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message
 
 ### Send
 
-Bot としてチャンネルにテキスト `content` を投稿します。
+Bot としてチャンネルにテキスト `content` を投稿します。レシーバが `nil` である場合は何もしません。
 
 ```go
 func (ch *Channel) Send(content string)
@@ -209,7 +209,7 @@ func (ch *Channel) Send(content string)
 
 ### Join
 
-チャンネルに参加します。チャンネルに参加するとそのチャンネルでの Bot 自身へのメンション以外の投稿を購読できるようになります。
+チャンネルに参加します。チャンネルに参加するとそのチャンネルでの Bot 自身へのメンション以外の投稿を購読できるようになります。レシーバが `nil` である場合は何もしません。
 
 ```go
 func (ch *Channel) Join()
@@ -217,21 +217,21 @@ func (ch *Channel) Join()
 
 ### Leave
 
-チャンネルから脱退します。
+チャンネルから脱退します。レシーバが `nil` である場合は何もしません。
 
 ```go
 func (ch *Channel) Leave()
 ```
 
-## User 型のメソッド
+## *User 型のメソッド
 
 現状ありません。欲しい機能がある場合には Issue を立ててもらえれば検討します。あるいは、プルリクエストを投げたり開発に協力してもらえたら大歓迎です。
 
-## Message 型のメソッド
+## *Message 型のメソッド
 
 ### Stamp
 
-メッセージにスタンプをつける多変数引数関数です。スタンプ名は両側のコロンを除外した文字列として指定します。
+メッセージにスタンプをつける多変数引数関数です。スタンプ名は両側のコロンを除外した文字列として指定します。レシーバが `nil` である場合は何もしません。
 
 ```go
 func (ms *Message) Stamp(stamps ...string)
