@@ -126,11 +126,11 @@ if err != nil {
 
 ```go
 err := cps.With(func(date *Date) error {
-	date.Day = "Sunday"
+    date.Day = "Sunday"
     return nil
 })
 
 if err != nil {
-	return err
+    return err
 }
 ```
