@@ -113,24 +113,24 @@ func With[T any](action func(config *T) error) error
 ```go
 date, err := cps.Load[Date]()
 if err != nil {
-    return err
+	return err
 }
 
 date.Day = "Sunday"
 
 err := cps.Save(date)
 if err != nil {
-    return err
+	return err
 }
 ```
 
 ```go
 err := cps.With(func(date *Date) error {
-    date.Day = "Sunday"
-    return nil
+	date.Day = "Sunday"
+	return nil
 })
 
 if err != nil {
-    return err
+	return err
 }
 ```
