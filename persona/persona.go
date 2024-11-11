@@ -21,7 +21,7 @@ type Command struct {
 	Syntax string // %s（文字列）, %d（数）, %x（無視）を用いた文字列として指定するコマンドの型
 
 	// 以下は SetUp の実行によって自動で追加される
-	name   string                       // Bot を呼び出すときのコマンド名
+	Name   string                       // Bot を呼び出すときのコマンド名
 	action func(*Message, ...any) error // Action を可変引数化した関数。実際に実行されるのはこっち
 }
 
@@ -51,7 +51,7 @@ func SetUp(
 
 	var err error
 	for name, command := range commands {
-		command.name = name
+		command.Name = name
 		command.action, err = varadic(command)
 		if err != nil {
 			panic(color.HiRedString("[failed to register command '%s'] %s", name, err))
