@@ -185,6 +185,14 @@ func NameGetUser(name string) *User
 func GetMessage(msID string) *Message
 ```
 
+### Unembed
+
+与えられた引数の文字列に含まれる埋め込みを外します。Message.Text 型は埋め込みを含むことがあるので、埋め込みのない状態のメッセージ本文が必要な場合はこの関数を使用してください。
+
+```go
+func Unembed(text string) string
+```
+
 ## *Channel 型のメソッド
 
 ### GetChildren

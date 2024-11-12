@@ -2,7 +2,9 @@ package persona
 
 import (
 	"context"
+	"encoding/json"
 	"log"
+	"slices"
 	"time"
 
 	"github.com/fatih/color"
@@ -73,4 +75,54 @@ func (ms *Message) Stamp(stamps ...string) {
 			// ユーザーやチャンネルと違いメッセージを一意に特定できる識別子は UUID しかないが、UUID そのものを表示させても…
 		}
 	}
+}
+
+// traQ 内部で使われている Unembedder と概ね同じロジック（TypeScript で書かれている）を Go で再実装
+// traq-ws-bot でメッセージイベントを受け取った時には PlainText を取得できるが、go-traq の API としては提供されていない
+// https://github.com/traPtitech/traQ_S-UI/blob/master/src/lib/markdown/internalLinkUnembedder.ts
+// 基本的に埋め込みは type, raw, id の 3 つのキーのみから構成される JSON 文字列 !{ ... } である
+
+type EmbedData struct {
+	Type  string `json:"type"`
+	Raw   string `json:"raw"`
+	Id    string `json:"id"`
+	Start int    // 埋め込みの開始位置
+	End   int    // 埋め込みの終了位置
+}
+
+func Unembed(text string) string {
+	textRune := []rune(text)
+	inEmbed := false
+
+	embedData := []EmbedData{}
+	data := EmbedData{}
+
+	for i := 0; i < len(textRune); i++ {
+		if inEmbed {
+			if textRune[i] == '}' {
+				inEmbed = false
+				data.End = i + 1
+				err := json.Unmarshal([]byte(string(textRune[data.Start+1:i+1])), &data)
+				if err == nil {
+					embedData = append(embedData, data)
+				}
+			}
+		} else {
+			if (i < len(textRune)-1) && textRune[i] == '!' && textRune[i+1] == '{' {
+				log.Println(textRune[i], textRune[i+1])
+				inEmbed = true
+				data = EmbedData{Start: i}
+			}
+		}
+	}
+
+	slices.Reverse(embedData)
+	// 得られた embedData を後ろから順に置き換えて埋め込みを解消する
+
+	for _, data := range embedData {
+		tempRune := append([]rune(data.Raw), textRune[data.End:]...)
+		textRune = append(textRune[:data.Start], tempRune...)
+	}
+
+	return string(textRune)
 }
