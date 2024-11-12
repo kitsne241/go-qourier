@@ -71,7 +71,7 @@ func SetUp(
 		panic(color.HiRedString("[failed to build a bot] make sure ACCESS_TOKEN is set!"))
 	}
 
-	mention := fmt.Sprintf("!{\"type\":\"user\",\"raw\":\"@%s\",\"id\":\"%s\"}", Me.Name, Me.ID)
+	mention := fmt.Sprintf(`!{"type":"user","raw":"@%s","id":"%s"}`, Me.Name, Me.ID)
 	// メッセージ本文などではメンションは JSON 形式の文字列に置き換えられている
 
 	Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
