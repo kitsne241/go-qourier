@@ -109,7 +109,6 @@ func Unembed(text string) string {
 			}
 		} else {
 			if (i < len(textRune)-1) && textRune[i] == '!' && textRune[i+1] == '{' {
-				log.Println(textRune[i], textRune[i+1])
 				inEmbed = true
 				data = EmbedData{Start: i}
 			}

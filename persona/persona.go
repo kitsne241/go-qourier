@@ -111,7 +111,7 @@ func SetUp(
 		getAllUsers()
 		getAllChannels()
 
-		log.Println("[refreshed bot]")
+		log.Println(color.GreenString("[initialized bot]"))
 	})
 	// 定期的に呼ばれる Ping で Bot のリフレッシュをしたり
 
