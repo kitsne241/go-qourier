@@ -5,7 +5,6 @@ package persona
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -71,38 +70,41 @@ func SetUp(
 		panic(color.HiRedString("[failed to build a bot] make sure ACCESS_TOKEN is set!"))
 	}
 
-	mention := fmt.Sprintf(`!{"type":"user","raw":"@%s","id":"%s"}`, Me.Name, Me.ID)
-	// メッセージ本文などではメンションは JSON 形式の文字列に置き換えられている
-
 	Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
 		ms := GetMessage(p.Message.ID)
 		if ms == nil {
 			return
 		}
 
-		content := strings.Replace(ms.Text, mention, "@"+Me.Name, 1)
-		elements := strings.SplitN(content, " ", 3)
-		// 最初の 2 つの半角スペースを見つけて最大 3 つに切り分ける。@BOT_name / コマンド / 引数
-		elements = append(elements, make([]string, 3-len(elements))...)
-		// elements の長さが常に 3 になるように規格化
+		// 送られてきたメッセージがコマンドであるならば適切に解釈してコマンドを実行する
 
-		command, exists := commands[elements[1]]
-		if (elements[0] == "@"+Me.Name) && exists {
-			// Bot に対するメンションから始まり、かつコマンド名が次に来るならコマンドを実行
+		_, embeds := Unembed(ms.Text)
 
-			if err = command.parseExecute(ms, elements[2]); err != nil {
-				if onFail != nil {
-					onFail(ms, command, err)
-				} else {
-					log.Println(color.HiYellowString("[failed to run command '%s'] %s", elements[1], err))
+		if (len(embeds) > 0) && (embeds[0].Start == 0) {
+			if (embeds[0].Type == "user") && (embeds[0].ID == Me.ID) {
+				// メッセージの最初で Bot 自身に対するメンションがなされている場合
+
+				elements := strings.SplitN(strings.TrimSpace(ms.Text[embeds[0].End:]), " ", 2)
+				// "@BOT_name" 以降のメッセージテキストで最初の半角スペースを見つけて最大 2 つに切り分ける
+				elements = append(elements, make([]string, 2-len(elements))...) // 常に elements の長さを 2 にする
+				command, exists := commands[elements[0]]
+				if exists {
+					// "@BOT_name コマンド" または "@BOT_name コマンド 引数" の形式のみコマンドとして認識
+					if err = command.parseExecute(ms, elements[1]); err != nil {
+						if onFail != nil {
+							onFail(ms, command, err)
+						} else {
+							log.Println(color.HiYellowString("[failed to run command '%s'] %s", elements[0], err))
+						}
+					}
+					return
 				}
 			}
-		} else {
-			// 登録コマンドの名前に一致するものがない、あるいはそもそも elements の初期の長さが 1 のとき
-			// 単にメッセージとして受け取った時の関数を実行
-			if onMessage != nil {
-				onMessage(ms)
-			}
+		}
+
+		// コマンドの実行条件に当てはまらなかった場合、通常メッセージとして扱い onMessage を実行する
+		if onMessage != nil {
+			onMessage(ms)
 		}
 	})
 
