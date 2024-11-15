@@ -82,20 +82,20 @@ func (ms *Message) Stamp(stamps ...string) {
 // https://github.com/traPtitech/traQ_S-UI/blob/master/src/lib/markdown/internalLinkUnembedder.ts
 // 基本的に埋め込みは type, raw, id の 3 つのキーのみから構成される JSON 文字列 !{ ... } である
 
-type EmbedData struct {
+type Embed struct {
 	Type  string `json:"type"`
 	Raw   string `json:"raw"`
-	Id    string `json:"id"`
+	ID    string `json:"id"`
 	Start int    // 埋め込みの開始位置
 	End   int    // 埋め込みの終了位置
 }
 
-func Unembed(text string) string {
+func Unembed(text string) (string, []Embed) {
 	textRune := []rune(text)
 	inEmbed := false
 
-	embedData := []EmbedData{}
-	data := EmbedData{}
+	embeds := []Embed{}
+	data := Embed{}
 
 	for i := 0; i < len(textRune); i++ {
 		if inEmbed {
@@ -104,24 +104,25 @@ func Unembed(text string) string {
 				data.End = i + 1
 				err := json.Unmarshal([]byte(string(textRune[data.Start+1:i+1])), &data)
 				if err == nil {
-					embedData = append(embedData, data)
+					embeds = append(embeds, data)
 				}
 			}
 		} else {
 			if (i < len(textRune)-1) && textRune[i] == '!' && textRune[i+1] == '{' {
 				inEmbed = true
-				data = EmbedData{Start: i}
+				data = Embed{Start: i}
 			}
 		}
 	}
 
-	slices.Reverse(embedData)
-	// 得られた embedData を後ろから順に置き換えて埋め込みを解消する
+	slices.Reverse(embeds)
+	// 得られた embed を後ろから順に置き換えて埋め込みを解消する
 
-	for _, data := range embedData {
+	for _, data := range embeds {
 		tempRune := append([]rune(data.Raw), textRune[data.End:]...)
 		textRune = append(textRune[:data.Start], tempRune...)
 	}
 
-	return string(textRune)
+	slices.Reverse(embeds)
+	return string(textRune), embeds
 }
