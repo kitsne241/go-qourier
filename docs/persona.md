@@ -9,7 +9,7 @@ traQ Bot がメンションから複数のコマンドを認識できるよう�
 | **ACCESS_TOKEN** | Bot のアクセストークン              |
 | **BOT_ID**       | Bot の ID。Bot User ID ではないほう |
 
-このパッケージは投稿されたメッセージをトリガーとして操作を実行する（あるいは cron などの外部パッケージを導入することで定期的に動作する）Bot の開発を主な用途として想定しています。このパッケージで用意されていないリクエストの送受信は `prs.Wsbot` から [traq-ws-bot](https://github.com/traPtitech/traq-ws-bot) 及び [go-traq](https://github.com/traPtitech/go-traq/tree/master) が提供する関数にアクセスして実現することができます。詳細は [バックエンド備忘録 - traQ Bot](https://wiki.trap.jp/user/kitsne/memo/バックエンド備忘録%20-%20traQ%20Bot) を確認してください。
+このパッケージは投稿されたメッセージをトリガーとして操作を実行する（あるいは cron などの外部パッケージを導入することで定期的に動作する）Bot の開発を主な用途として想定しています。このパッケージで用意されていないリクエストの送受信は `prs.Wsbot` から [traq-ws-bot](https://github.com/traPtitech/traq-ws-bot) 及び [go-traq](https://github.com/traPtitech/go-traq/tree/master) が提供する関数にアクセスして実現することができます。詳細は [Go による traQ Bot 開発](https://wiki.trap.jp/user/kitsne/memo/Go%20による%20traQ%20Bot%20開発) などいくつか traP Wiki に記事があるので参考にしてください。
 
 ## 型
 
