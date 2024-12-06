@@ -123,14 +123,29 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 	// 同じユーザーに対して何度も GetUser をするのは処理の無駄が激しく API の制限も受けやすいので、
 	// 一時的に情報を保存の上再利用して制限を回避する
 
+	addUser := func(userId string) { // 与えられた UUID をもつユーザーがまだ userDic になければ追加する
+		_, exists := userDic[userId]
+		if !exists {
+			user := GetUser(userId)
+			if user != nil {
+				userDic[userId] = user
+			}
+		}
+	}
+
 	messages := make([]*Message, len(respAll))
 	for i, message := range respAll {
-		_, exists := userDic[message.UserId]
-		if !exists {
-			user := GetUser(message.UserId)
-			if user != nil {
-				userDic[message.UserId] = user
-			}
+		addUser(message.UserId)
+
+		stamps := []*Stamp{}
+		for _, mstamp := range message.Stamps {
+			addUser(mstamp.UserId)
+			stamps = append(stamps, &Stamp{
+				Name:  stampIDName[mstamp.StampId],
+				ID:    mstamp.StampId,
+				User:  userDic[mstamp.UserId],
+				Count: int(mstamp.Count),
+			})
 		}
 
 		messages[i] = &Message{
@@ -140,6 +155,7 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 			CreatedAt: message.CreatedAt.In(jst),
 			UpdatedAt: message.UpdatedAt.In(jst),
 			Author:    userDic[message.UserId],
+			Stamps:    stamps,
 		}
 	}
 

@@ -31,6 +31,7 @@ var Wsbot *traqwsbot.Bot
 var Me *User
 
 var stampNameID = map[string]string{}   // "tada" -> "8bfd4032-18d1-477f-894c-08855b46fd2f"
+var stampIDName = map[string]string{}   // "8bfd4032-18d1-477f-894c-08855b46fd2f" -> "tada"
 var userNameID = map[string]string{}    // "kitsne" -> "a77f54f2-a7dc-4dab-ad6d-5c5df7e9ecfa"
 var channelPathID = map[string]string{} // "gps/times/kitsnegra" -> "019275db-f2fd-7922-81c9-956aab18612d"
 
@@ -138,7 +139,9 @@ func getAllStamps() {
 	}
 
 	stampNameID = map[string]string{}
+	stampIDName = map[string]string{}
 	for _, stamp := range stamps { // resp にはtraQ の全てのスタンプの情報が入っている
+		stampIDName[stamp.Id] = stamp.Name
 		stampNameID[stamp.Name] = stamp.Id
 	}
 }

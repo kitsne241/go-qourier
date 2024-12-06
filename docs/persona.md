@@ -95,6 +95,7 @@ type Message struct {
 	CreatedAt time.Time `json:"createdat"`
 	UpdatedAt time.Time `json:"updatedat"`
 	Author    *User     `json:"author"`
+	Stamps    []*Stamp  `json:"stamps"`
 }
 ```
 
@@ -106,6 +107,28 @@ type Message struct {
 | **CreatedAt** | メッセージの投稿日時を JST で                    |  |
 | **UpdatedAt** | メッセージの編集日時を JST で                    |
 | **Author**    | メッセージを投稿したユーザー                     |
+| **Stamps**    | メッセージにつけられたスタンプのリスト           |
+
+### Stamp
+
+traQ のメッセージにつけられたスタンプを表現する型です。具体的には、あるユーザーによってつけられたあるスタンプを表す型です。
+
+```go
+type Stamp struct {
+	Name  string `json:"name"`
+	ID    string `json:"id"`
+	User  *User  `json:"user"`
+	Count int    `json:"count"`
+}
+```
+
+| フィールド | 説明                                  |
+| ---------- | ------------------------------------- |
+| **Name**   | スタンプの名前。両端の `:` がない形式 |
+| **ID**     | スタンプがもつ UUID                   |
+| **User**   | スタンプを押したユーザー              |
+| **Count**  | `User` によってスタンプが押された回数 |
+
 
 ### Embed
 

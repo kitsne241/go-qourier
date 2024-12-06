@@ -18,6 +18,15 @@ type Message struct {
 	CreatedAt time.Time `json:"createdat"` // JST
 	UpdatedAt time.Time `json:"updatedat"` // JST
 	Author    *User     `json:"author"`
+	Stamps    []*Stamp  `json:"stamps"`
+}
+
+// 特定ユーザーからの特定スタンプ
+type Stamp struct {
+	Name  string `json:"name"`
+	ID    string `json:"id"`
+	Count int    `json:"count"`
+	User  *User  `json:"user"`
 }
 
 // 基本的に error は出さずに異常ログのみ、呼び出し元には nil あるいは空の配列として伝える方針
@@ -46,6 +55,16 @@ func GetMessage(msID string) *Message {
 		return nil
 	}
 
+	stamps := []*Stamp{}
+	for _, mstamp := range resp.Stamps {
+		stamps = append(stamps, &Stamp{
+			Name:  stampIDName[mstamp.StampId],
+			ID:    mstamp.StampId,
+			User:  GetUser(mstamp.UserId), // 各ユーザーにつき一回きりの取得なので addUser() は使わないでよさそう
+			Count: int(mstamp.Count),
+		})
+	}
+
 	return &Message{
 		Channel:   ch,
 		Text:      resp.Content,
@@ -53,6 +72,7 @@ func GetMessage(msID string) *Message {
 		CreatedAt: resp.CreatedAt.In(jst),
 		UpdatedAt: resp.UpdatedAt.In(jst),
 		Author:    user,
+		Stamps:    stamps,
 	}
 }
 
