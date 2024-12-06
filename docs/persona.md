@@ -49,10 +49,10 @@ traQ チャンネルを表現する型です。
 
 ```go
 type Channel struct {
-	Name   string
-	Path   string
-	ID     string
-	Parent *Channel
+	Name   string   `json:"name"`
+	Path   string   `json:"path"`
+	ID     string   `json:"id"`
+	Parent *Channel `json:"parent"`
 }
 ```
 
@@ -69,10 +69,10 @@ traQ ユーザーを表現する型です。
 
 ```go
 type User struct {
-	Nick  string
-	Name  string
-	ID    string
-	IsBot bool
+	Nick  string `json:"nick"`
+	Name  string `json:"name"`
+	ID    string `json:"id"`
+	IsBot bool   `json:"isbot"`
 }
 ```
 
@@ -89,12 +89,12 @@ traQ のメッセージを表現する型です。
 
 ```go
 type Message struct {
-	Channel   *Channel
-	Text      string
-	ID        string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Author    *User
+	Channel   *Channel  `json:"channel"`
+	Text      string    `json:"text"`
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"createdat"`
+	UpdatedAt time.Time `json:"updatedat"`
+	Author    *User     `json:"author"`
 }
 ```
 
@@ -116,8 +116,8 @@ type Embed struct {
 	Type  string `json:"type"`
 	Raw   string `json:"raw"`
 	ID    string `json:"id"`
-	Start int
-	End   int
+	Start int    `json:"start"`
+	End   int    `json:"end"`
 }
 ```
 

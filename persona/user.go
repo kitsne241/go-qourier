@@ -8,10 +8,10 @@ import (
 )
 
 type User struct {
-	Nick  string // きつね
-	Name  string // @kitsne
-	ID    string // UUID
-	IsBot bool
+	Nick  string `json:"nick"` // きつね
+	Name  string `json:"name"` // kitsne
+	ID    string `json:"id"`   // UUID
+	IsBot bool   `json:"isbot"`
 }
 
 func GetUser(usID string) *User {

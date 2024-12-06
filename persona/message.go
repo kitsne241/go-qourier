@@ -12,12 +12,12 @@ import (
 )
 
 type Message struct {
-	Channel   *Channel
-	Text      string
-	ID        string
-	CreatedAt time.Time // JST
-	UpdatedAt time.Time // JST
-	Author    *User
+	Channel   *Channel  `json:"channel"`
+	Text      string    `json:"text"`
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"createdat"` // JST
+	UpdatedAt time.Time `json:"updatedat"` // JST
+	Author    *User     `json:"author"`
 }
 
 // 基本的に error は出さずに異常ログのみ、呼び出し元には nil あるいは空の配列として伝える方針
@@ -86,8 +86,8 @@ type Embed struct {
 	Type  string `json:"type"`
 	Raw   string `json:"raw"`
 	ID    string `json:"id"`
-	Start int    // 埋め込みの開始位置
-	End   int    // 埋め込みの終了位置
+	Start int    `json:"start"` // 埋め込みの開始位置
+	End   int    `json:"end"`   // 埋め込みの終了位置
 }
 
 func Unembed(text string) (string, []Embed) {

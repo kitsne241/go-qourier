@@ -11,10 +11,10 @@ import (
 )
 
 type Channel struct {
-	Name   string
-	Path   string // 例： "team/sound/1DTM"
-	ID     string
-	Parent *Channel
+	Name   string   `json:"name"`
+	Path   string   `json:"path"` // 例： "team/sound/1DTM"
+	ID     string   `json:"id"`
+	Parent *Channel `json:"parent"`
 }
 
 func GetChannel(chID string) *Channel {
