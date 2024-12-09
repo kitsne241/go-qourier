@@ -15,7 +15,7 @@ type User struct {
 	bot   *Bot
 }
 
-func (bot Bot) GetUser(usID string) *User {
+func (bot *Bot) GetUser(usID string) *User {
 	resp, _, err := bot.Wsbot.API().UserApi.GetUser(context.Background(), usID).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get user in GetUser(%d)] %s", usID, err))
@@ -27,11 +27,11 @@ func (bot Bot) GetUser(usID string) *User {
 		Name:  resp.Name,
 		ID:    usID,
 		IsBot: resp.Bot,
-		bot:   &bot,
+		bot:   bot,
 	}
 }
 
-func (bot Bot) NameGetUser(name string) *User {
+func (bot *Bot) NameGetUser(name string) *User {
 	// ユーザー名（"kitsne" とか）から *User 型を得る
 	usID, exists := userNameID[name]
 	if !exists {
@@ -41,7 +41,7 @@ func (bot Bot) NameGetUser(name string) *User {
 	return bot.GetUser(usID)
 }
 
-func (bot Bot) getMe() *User {
+func (bot *Bot) getMe() *User {
 	resp, _, err := bot.Wsbot.API().MeApi.GetMe(context.Background()).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get myself in GetMe()] %s", err)) // すごい文面だ…
@@ -53,6 +53,6 @@ func (bot Bot) getMe() *User {
 		Name:  resp.Name,
 		ID:    resp.Id,
 		IsBot: true,
-		bot:   &bot,
+		bot:   bot,
 	}
 }

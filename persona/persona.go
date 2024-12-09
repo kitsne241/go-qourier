@@ -22,15 +22,19 @@ type Command struct {
 	// 以下は SetUp の実行によって自動で追加される
 	Name   string                       // Bot を呼び出すときのコマンド名
 	action func(*Message, ...any) error // Action を可変引数化した関数。実際に実行されるのはこっち
-	bot    Bot
+}
+
+type Bot struct {
+	Wsbot     *traqwsbot.Bot
+	Me        *User
+	Commands  map[string]*Command
+	Run       func()
+	OnMessage func(*Message)
+	OnFail    func(*Message, *Command, error)
+	OnStamp   func(*Message, *Stamp)
 }
 
 type Commands map[string]*Command
-
-type Bot struct {
-	Wsbot *traqwsbot.Bot
-	Me    *User
-}
 
 var stampNameID = map[string]string{}   // "tada" -> "8bfd4032-18d1-477f-894c-08855b46fd2f"
 var stampIDName = map[string]string{}   // "8bfd4032-18d1-477f-894c-08855b46fd2f" -> "tada"
@@ -43,14 +47,7 @@ func init() {
 	godotenv.Load(".env")
 }
 
-func SetUp(
-	commands Commands,
-	onMessage func(*Message),
-	onFail func(*Message, *Command, error),
-) Bot {
-	// onMessage : 受け取ったメッセージがコマンドでない場合に呼ばれる関数
-	// onFail    : 何らかの原因でコマンドの実行が失敗したときに呼ばれる関数
-
+func (bot *Bot) SetUp(commands Commands) {
 	var err error
 	for name, command := range commands {
 		command.Name = name
@@ -61,8 +58,6 @@ func SetUp(
 	}
 	// Command 型の配列である引数 commands から {関数名: 実行関数} の辞書 commandsDic を得る
 	// この際 varadic の内部で関数の構造が条件に適合しているかの審査を同時に行い、不適正なら panic する
-
-	bot := Bot{}
 
 	bot.Wsbot, err = traqwsbot.NewBot(&traqwsbot.Options{ // Bot を作成
 		AccessToken: os.Getenv("ACCESS_TOKEN"),
@@ -96,8 +91,8 @@ func SetUp(
 				if exists {
 					// "@BOT_name コマンド" または "@BOT_name コマンド 引数" の形式のみコマンドとして認識
 					if err = command.parseExecute(ms, elements[1]); err != nil {
-						if onFail != nil {
-							onFail(ms, command, err)
+						if bot.OnFail != nil {
+							bot.OnFail(ms, command, err)
 						} else {
 							log.Println(color.HiYellowString("[failed to run command '%s'] %s", elements[0], err))
 						}
@@ -108,8 +103,8 @@ func SetUp(
 		}
 
 		// コマンドの実行条件に当てはまらなかった場合、通常メッセージとして扱い onMessage を実行する
-		if onMessage != nil {
-			onMessage(ms)
+		if bot.OnMessage != nil {
+			bot.OnMessage(ms)
 		}
 	})
 
@@ -127,17 +122,16 @@ func SetUp(
 	bot.getAllChannels()
 
 	log.Println(color.GreenString("[initialized bot]"))
-	return bot
 }
 
-func (bot Bot) Start() error {
+func (bot *Bot) Start() error {
 	if bot.Wsbot == nil {
 		panic(color.HiRedString("[bot is not set up]"))
 	}
 	return bot.Wsbot.Start()
 }
 
-func (bot Bot) getAllStamps() {
+func (bot *Bot) getAllStamps() {
 	stamps, _, err := bot.Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get stamps in getAllStamps()] %s", err))
@@ -151,7 +145,7 @@ func (bot Bot) getAllStamps() {
 	}
 }
 
-func (bot Bot) getAllUsers() {
+func (bot *Bot) getAllUsers() {
 	users, _, err := bot.Wsbot.API().UserApi.GetUsers(context.Background()).IncludeSuspended(true).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get users in getAllUsers()] %s", err))
@@ -163,7 +157,7 @@ func (bot Bot) getAllUsers() {
 	}
 }
 
-func (bot Bot) getAllChannels() {
+func (bot *Bot) getAllChannels() {
 	// 一度に何百回も API にアクセスするとエラーを生じがちなので
 	// たった一度の API アクセスからチャンネルの path と ID の対応表を作りたい
 	// GetChannels によって全てのパブリックチャンネルについて チャンネルのID・親チャンネルのID・チャンネルの名前 の 3 つが分かるので、

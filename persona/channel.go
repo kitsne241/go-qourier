@@ -18,7 +18,7 @@ type Channel struct {
 	bot    *Bot
 }
 
-func (bot Bot) GetChannel(chID string) *Channel {
+func (bot *Bot) GetChannel(chID string) *Channel {
 	resp, _, err := bot.Wsbot.API().ChannelApi.GetChannel(context.Background(), chID).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get channel in GetChannel(%s)] %s", chID, err))
@@ -44,11 +44,11 @@ func (bot Bot) GetChannel(chID string) *Channel {
 		Path:   path,
 		ID:     chID,
 		Parent: parent,
-		bot:    &bot,
+		bot:    bot,
 	}
 }
 
-func (bot Bot) PathGetChannel(path string) *Channel {
+func (bot *Bot) PathGetChannel(path string) *Channel {
 	chID, exists := channelPathID[path]
 	if !exists {
 		log.Println(color.HiYellowString("[failed to get channel in PathGetChannel(\"%s\")] not found such channel", path))
