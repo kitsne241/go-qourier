@@ -25,13 +25,12 @@ type Command struct {
 }
 
 type Bot struct {
-	Wsbot     *traqwsbot.Bot
-	Me        *User
-	Commands  map[string]*Command
-	Run       func()
-	OnMessage func(*Message)
-	OnFail    func(*Message, *Command, error)
-	OnStamp   func(*Message, *Stamp)
+	Wsbot         *traqwsbot.Bot
+	Me            *User
+	Commands      map[string]*Command
+	OnMessage     func(*Message)
+	OnFail        func(*Message, *Command, error)
+	OnStampUpdate func(*Message)
 }
 
 type Commands map[string]*Command
@@ -106,6 +105,17 @@ func (bot *Bot) SetUp(commands Commands) {
 		if bot.OnMessage != nil {
 			bot.OnMessage(ms)
 		}
+	})
+
+	bot.Wsbot.OnBotMessageStampsUpdated(func(p *payload.BotMessageStampsUpdated) {
+		ms := bot.GetMessage(p.MessageID)
+		if ms == nil {
+			return
+		}
+
+		// どのスタンプが変更されたかの情報までは提供されていない
+		// 必要があれば逐一データベースに保存して変更前と照合することで情報を得ることはできる
+		bot.OnStampUpdate(ms)
 	})
 
 	bot.Wsbot.OnPing(func(p *payload.Ping) {
