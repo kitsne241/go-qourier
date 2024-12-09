@@ -22,13 +22,15 @@ type Command struct {
 	// 以下は SetUp の実行によって自動で追加される
 	Name   string                       // Bot を呼び出すときのコマンド名
 	action func(*Message, ...any) error // Action を可変引数化した関数。実際に実行されるのはこっち
+	bot    Bot
 }
 
 type Commands map[string]*Command
 
-var Wsbot *traqwsbot.Bot
-
-var Me *User
+type Bot struct {
+	Wsbot *traqwsbot.Bot
+	Me    *User
+}
 
 var stampNameID = map[string]string{}   // "tada" -> "8bfd4032-18d1-477f-894c-08855b46fd2f"
 var stampIDName = map[string]string{}   // "8bfd4032-18d1-477f-894c-08855b46fd2f" -> "tada"
@@ -45,7 +47,7 @@ func SetUp(
 	commands Commands,
 	onMessage func(*Message),
 	onFail func(*Message, *Command, error),
-) {
+) Bot {
 	// onMessage : 受け取ったメッセージがコマンドでない場合に呼ばれる関数
 	// onFail    : 何らかの原因でコマンドの実行が失敗したときに呼ばれる関数
 
@@ -60,19 +62,21 @@ func SetUp(
 	// Command 型の配列である引数 commands から {関数名: 実行関数} の辞書 commandsDic を得る
 	// この際 varadic の内部で関数の構造が条件に適合しているかの審査を同時に行い、不適正なら panic する
 
-	Wsbot, err = traqwsbot.NewBot(&traqwsbot.Options{ // Bot を作成
+	bot := Bot{}
+
+	bot.Wsbot, err = traqwsbot.NewBot(&traqwsbot.Options{ // Bot を作成
 		AccessToken: os.Getenv("ACCESS_TOKEN"),
 	})
 	if err != nil {
 		panic(color.HiRedString("[failed to create a new bot] %s", err))
 	}
 
-	if Me = getMe(); Me == nil {
+	if bot.Me = bot.getMe(); bot.Me == nil {
 		panic(color.HiRedString("[failed to build a bot] make sure ACCESS_TOKEN is set!"))
 	}
 
-	Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
-		ms := GetMessage(p.Message.ID)
+	bot.Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
+		ms := bot.GetMessage(p.Message.ID)
 		if ms == nil {
 			return
 		}
@@ -82,7 +86,7 @@ func SetUp(
 		_, embeds := Unembed(ms.Text)
 
 		if (len(embeds) > 0) && (embeds[0].Start == 0) {
-			if (embeds[0].Type == "user") && (embeds[0].ID == Me.ID) {
+			if (embeds[0].Type == "user") && (embeds[0].ID == bot.Me.ID) {
 				// メッセージの最初で Bot 自身に対するメンションがなされている場合
 
 				elements := strings.SplitN(strings.TrimSpace(ms.Text[embeds[0].End:]), " ", 2)
@@ -109,31 +113,32 @@ func SetUp(
 		}
 	})
 
-	Wsbot.OnPing(func(p *payload.Ping) {
-		getAllStamps()
-		getAllUsers()
-		getAllChannels()
+	bot.Wsbot.OnPing(func(p *payload.Ping) {
+		bot.getAllStamps()
+		bot.getAllUsers()
+		bot.getAllChannels()
 
 		log.Println(color.GreenString("[initialized bot]"))
 	})
 	// 定期的に呼ばれる Ping で Bot のリフレッシュをしたり
 
-	getAllStamps()
-	getAllUsers()
-	getAllChannels()
+	bot.getAllStamps()
+	bot.getAllUsers()
+	bot.getAllChannels()
 
 	log.Println(color.GreenString("[initialized bot]"))
+	return bot
 }
 
-func Start() error {
-	if Wsbot == nil {
+func (bot Bot) Start() error {
+	if bot.Wsbot == nil {
 		panic(color.HiRedString("[bot is not set up]"))
 	}
-	return Wsbot.Start()
+	return bot.Wsbot.Start()
 }
 
-func getAllStamps() {
-	stamps, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
+func (bot Bot) getAllStamps() {
+	stamps, _, err := bot.Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get stamps in getAllStamps()] %s", err))
 	}
@@ -146,8 +151,8 @@ func getAllStamps() {
 	}
 }
 
-func getAllUsers() {
-	users, _, err := Wsbot.API().UserApi.GetUsers(context.Background()).IncludeSuspended(true).Execute()
+func (bot Bot) getAllUsers() {
+	users, _, err := bot.Wsbot.API().UserApi.GetUsers(context.Background()).IncludeSuspended(true).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get users in getAllUsers()] %s", err))
 	}
@@ -158,13 +163,13 @@ func getAllUsers() {
 	}
 }
 
-func getAllChannels() {
+func (bot Bot) getAllChannels() {
 	// 一度に何百回も API にアクセスするとエラーを生じがちなので
 	// たった一度の API アクセスからチャンネルの path と ID の対応表を作りたい
 	// GetChannels によって全てのパブリックチャンネルについて チャンネルのID・親チャンネルのID・チャンネルの名前 の 3 つが分かるので、
 	// 親子の関連付けからチャンネルの親子関係のグラフを作成し、それぞれのチャンネルの名前を末尾まで継承してパスを作る
 
-	channels, _, err := Wsbot.API().ChannelApi.GetChannels(context.Background()).IncludeDm(false).Execute()
+	channels, _, err := bot.Wsbot.API().ChannelApi.GetChannels(context.Background()).IncludeDm(false).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get channels in getAllChannels()] %s", err))
 	}

@@ -19,6 +19,7 @@ type Message struct {
 	UpdatedAt time.Time `json:"updatedat"` // JST
 	Author    *User     `json:"author"`
 	Stamps    []*Stamp  `json:"stamps"`
+	bot       *Bot
 }
 
 // 特定ユーザーからの特定スタンプ
@@ -27,24 +28,25 @@ type Stamp struct {
 	ID    string `json:"id"`
 	Count int    `json:"count"`
 	User  *User  `json:"user"`
+	bot   *Bot
 }
 
 // 基本的に error は出さずに異常ログのみ、呼び出し元には nil あるいは空の配列として伝える方針
 // 適切な引数による実行の上で API との接続で問題が生じた場合はエラーメッセージがエラーの原因に直接結びつかない気がするため
 
-func GetMessage(msID string) *Message {
-	resp, _, err := Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
+func (bot Bot) GetMessage(msID string) *Message {
+	resp, _, err := bot.Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get message in GetMessage(%s)] %s", msID, err))
 		return nil
 	}
 
-	ch := GetChannel(resp.ChannelId)
+	ch := bot.GetChannel(resp.ChannelId)
 	if ch == nil {
 		return nil
 	}
 
-	user := GetUser(resp.UserId)
+	user := bot.GetUser(resp.UserId)
 	if user == nil {
 		return nil
 	}
@@ -60,8 +62,9 @@ func GetMessage(msID string) *Message {
 		stamps = append(stamps, &Stamp{
 			Name:  stampIDName[mstamp.StampId],
 			ID:    mstamp.StampId,
-			User:  GetUser(mstamp.UserId), // 各ユーザーにつき一回きりの取得なので addUser() は使わないでよさそう
+			User:  bot.GetUser(mstamp.UserId), // 各ユーザーにつき一回きりの取得なので addUser() は使わないでよさそう
 			Count: int(mstamp.Count),
+			bot:   &bot,
 		})
 	}
 
@@ -73,6 +76,7 @@ func GetMessage(msID string) *Message {
 		UpdatedAt: resp.UpdatedAt.In(jst),
 		Author:    user,
 		Stamps:    stamps,
+		bot:       &bot,
 	}
 }
 
@@ -85,7 +89,7 @@ func (ms *Message) Stamp(stamps ...string) {
 		if !exists {
 			log.Println(color.HiYellowString("[failed to put stamp to post in Stamp(\"%s\")] stamp \"%s\" not found", stamp, stamp))
 		}
-		_, err := Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID).
+		_, err := ms.bot.Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID).
 			PostMessageStampRequest(*traq.NewPostMessageStampRequestWithDefaults()).Execute()
 
 		if err != nil {
