@@ -41,11 +41,6 @@ func (bot *Bot) GetMessage(msID string) *Message {
 		return nil
 	}
 
-	userDic := map[string]*User{}
-	// ユーザーの UUID と User 型との対応の辞書
-	// 同じユーザーに対して何度も GetUser をするのは処理の無駄が激しく API の制限も受けやすいので、
-	// 一時的に情報を保存の上再利用して制限を回避する
-
 	ch := bot.GetChannel(resp.ChannelId)
 	if ch == nil {
 		return nil
@@ -62,6 +57,7 @@ func (bot *Bot) GetMessage(msID string) *Message {
 		return nil
 	}
 
+	userDic := map[string]*User{}
 	addUser := func(userId string) { // 与えられた UUID をもつユーザーがまだ userDic になければ追加する
 		_, exists := userDic[userId]
 		if !exists {
