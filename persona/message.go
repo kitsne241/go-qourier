@@ -41,6 +41,11 @@ func (bot *Bot) GetMessage(msID string) *Message {
 		return nil
 	}
 
+	userDic := map[string]*User{}
+	// ユーザーの UUID と User 型との対応の辞書
+	// 同じユーザーに対して何度も GetUser をするのは処理の無駄が激しく API の制限も受けやすいので、
+	// 一時的に情報を保存の上再利用して制限を回避する
+
 	ch := bot.GetChannel(resp.ChannelId)
 	if ch == nil {
 		return nil
@@ -57,12 +62,23 @@ func (bot *Bot) GetMessage(msID string) *Message {
 		return nil
 	}
 
+	addUser := func(userId string) { // 与えられた UUID をもつユーザーがまだ userDic になければ追加する
+		_, exists := userDic[userId]
+		if !exists {
+			user := bot.GetUser(userId)
+			if user != nil {
+				userDic[userId] = user
+			}
+		}
+	}
+
 	stamps := []*Stamp{}
 	for _, mstamp := range resp.Stamps {
+		addUser(mstamp.UserId)
 		stamps = append(stamps, &Stamp{
 			Name:  stampIDName[mstamp.StampId],
 			ID:    mstamp.StampId,
-			User:  bot.GetUser(mstamp.UserId), // 各ユーザーにつき一回きりの取得なので addUser() は使わないでよさそう
+			User:  userDic[mstamp.UserId],
 			Count: int(mstamp.Count),
 			bot:   bot,
 		})
