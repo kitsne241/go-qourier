@@ -24,14 +24,11 @@ type Command struct {
 	action func(*Message, ...any) error // Action を可変引数化した関数。実際に実行されるのはこっち
 }
 
-type Bot struct {
-	Wsbot         *traqwsbot.Bot
-	Me            *User
-	Commands      map[string]*Command
-	OnMessage     func(*Message)
-	OnFail        func(*Message, *Command, error)
-	OnStampUpdate func(*Message)
-}
+var OnMessage func(*Message)
+var OnFail func(*Message, *Command, error)
+var OnStampUpdate func(*Message)
+var Wsbot *traqwsbot.Bot
+var Me *User
 
 type Commands map[string]*Command
 
@@ -41,7 +38,7 @@ func init() {
 
 // main.go で使うサブパッケージの関数は全て大文字から始める。小文字スタートのままではインポートが失敗する
 
-func (bot *Bot) SetUp(commands Commands) {
+func SetUp(commands Commands) {
 	err := error(nil)
 	for name, command := range commands {
 		command.Name = name
@@ -53,19 +50,19 @@ func (bot *Bot) SetUp(commands Commands) {
 	// Command 型の配列である引数 commands から {関数名: 実行関数} の辞書 commandsDic を得る
 	// この際 varadic の内部で関数の構造が条件に適合しているかの審査を同時に行い、不適正なら panic する
 
-	bot.Wsbot, err = traqwsbot.NewBot(&traqwsbot.Options{ // Bot を作成
+	Wsbot, err = traqwsbot.NewBot(&traqwsbot.Options{ // Bot を作成
 		AccessToken: os.Getenv("ACCESS_TOKEN"),
 	})
 	if err != nil {
 		panic(color.HiRedString("[failed to create a new bot] %s", err))
 	}
 
-	if bot.Me = bot.getMe(); bot.Me == nil {
+	if Me = getMe(); Me == nil {
 		panic(color.HiRedString("[failed to build a bot] make sure ACCESS_TOKEN is set!"))
 	}
 
-	bot.Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
-		ms := bot.GetMessage(p.Message.ID)
+	Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
+		ms := GetMessage(p.Message.ID)
 		if ms == nil {
 			return
 		}
@@ -75,7 +72,7 @@ func (bot *Bot) SetUp(commands Commands) {
 		_, embeds := Unembed(ms.Text)
 
 		if (len(embeds) > 0) && (embeds[0].Start == 0) {
-			if (embeds[0].Type == "user") && (embeds[0].ID == bot.Me.ID) {
+			if (embeds[0].Type == "user") && (embeds[0].ID == Me.ID) {
 				// メッセージの最初で Bot 自身に対するメンションがなされている場合
 
 				elements := strings.SplitN(strings.TrimSpace(ms.Text[embeds[0].End:]), " ", 2)
@@ -85,8 +82,8 @@ func (bot *Bot) SetUp(commands Commands) {
 				if exists {
 					// "@BOT_name コマンド" または "@BOT_name コマンド 引数" の形式のみコマンドとして認識
 					if err = command.parseExecute(ms, elements[1]); err != nil {
-						if bot.OnFail != nil {
-							bot.OnFail(ms, command, err)
+						if OnFail != nil {
+							OnFail(ms, command, err)
 						} else {
 							log.Println(color.HiYellowString("[failed to run command '%s'] %s", elements[0], err))
 						}
@@ -97,28 +94,28 @@ func (bot *Bot) SetUp(commands Commands) {
 		}
 
 		// コマンドの実行条件に当てはまらなかった場合、通常メッセージとして扱い onMessage を実行する
-		if bot.OnMessage != nil {
-			bot.OnMessage(ms)
+		if OnMessage != nil {
+			OnMessage(ms)
 		}
 	})
 
-	bot.Wsbot.OnBotMessageStampsUpdated(func(p *payload.BotMessageStampsUpdated) {
-		ms := bot.GetMessage(p.MessageID)
+	Wsbot.OnBotMessageStampsUpdated(func(p *payload.BotMessageStampsUpdated) {
+		ms := GetMessage(p.MessageID)
 		if ms == nil {
 			return
 		}
 
 		// どのスタンプが変更されたかの情報までは提供されていない
 		// 必要があれば逐一データベースに保存して変更前と照合することで情報を得ることはできる
-		bot.OnStampUpdate(ms)
+		OnStampUpdate(ms)
 	})
 
 	log.Println(color.GreenString("[initialized bot]"))
 }
 
-func (bot *Bot) Start() error {
-	if bot.Wsbot == nil {
+func Start() error {
+	if Wsbot == nil {
 		panic(color.HiRedString("[bot is not set up]"))
 	}
-	return bot.Wsbot.Start()
+	return Wsbot.Start()
 }

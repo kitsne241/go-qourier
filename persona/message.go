@@ -18,25 +18,24 @@ type Message struct {
 	UpdatedAt time.Time `json:"updatedat"` // JST
 	Author    *User     `json:"author"`
 	Stamps    []*Stamp  `json:"stamps"`
-	bot       *Bot
 }
 
 // 基本的に error は出さずに異常ログのみ、呼び出し元には nil あるいは空の配列として伝える方針
 // 適切な引数による実行の上で API との接続で問題が生じた場合はエラーメッセージがエラーの原因に直接結びつかない気がするため
 
-func (bot *Bot) GetMessage(msID string) *Message {
-	resp, _, err := bot.Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
+func GetMessage(msID string) *Message {
+	resp, _, err := Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get message in GetMessage(%s)] %s", msID, err))
 		return nil
 	}
 
-	ch := bot.GetChannel(resp.ChannelId)
+	ch := GetChannel(resp.ChannelId)
 	if ch == nil {
 		return nil
 	}
 
-	user := bot.GetUser(resp.UserId)
+	user := GetUser(resp.UserId)
 	if user == nil {
 		return nil
 	}
@@ -51,14 +50,14 @@ func (bot *Bot) GetMessage(msID string) *Message {
 	addUser := func(userId string) { // 与えられた UUID をもつユーザーがまだ userDic になければ追加する
 		_, exists := userDic[userId]
 		if !exists {
-			user := bot.GetUser(userId)
+			user := GetUser(userId)
 			if user != nil {
 				userDic[userId] = user
 			}
 		}
 	}
 
-	stampIDName := ch.bot.getAllStamps().Symbol
+	stampIDName := getAllStamps().Symbol
 
 	stamps := []*Stamp{}
 	for _, mstamp := range resp.Stamps {
@@ -68,7 +67,6 @@ func (bot *Bot) GetMessage(msID string) *Message {
 			ID:    mstamp.StampId,
 			User:  userDic[mstamp.UserId],
 			Count: int(mstamp.Count),
-			bot:   bot,
 		})
 	}
 
@@ -80,7 +78,6 @@ func (bot *Bot) GetMessage(msID string) *Message {
 		UpdatedAt: resp.UpdatedAt.In(jst),
 		Author:    user,
 		Stamps:    stamps,
-		bot:       bot,
 	}
 }
 

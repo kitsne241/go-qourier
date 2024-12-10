@@ -15,11 +15,10 @@ type Channel struct {
 	Path   string   `json:"path"` // 例： "team/sound/1DTM"
 	ID     string   `json:"id"`
 	Parent *Channel `json:"parent"`
-	bot    *Bot
 }
 
-func (bot *Bot) GetChannel(chID string) *Channel {
-	resp, _, err := bot.Wsbot.API().ChannelApi.GetChannel(context.Background(), chID).Execute()
+func GetChannel(chID string) *Channel {
+	resp, _, err := Wsbot.API().ChannelApi.GetChannel(context.Background(), chID).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get channel in GetChannel(%s)] %s", chID, err))
 		return nil
@@ -30,7 +29,7 @@ func (bot *Bot) GetChannel(chID string) *Channel {
 
 	parentID := resp.ParentId.Get()
 	if parentID != nil { // resp.ParentId.IsSet() は常に true のようなので…
-		parent = bot.GetChannel(*parentID) // 親チャンネルを得る
+		parent = GetChannel(*parentID) // 親チャンネルを得る
 		if parent == nil {
 			return nil
 		}
@@ -44,26 +43,25 @@ func (bot *Bot) GetChannel(chID string) *Channel {
 		Path:   path,
 		ID:     chID,
 		Parent: parent,
-		bot:    bot,
 	}
 }
 
-func (bot *Bot) PathGetChannel(path string) *Channel {
-	channelPathID := bot.getAllChannels().ID
+func PathGetChannel(path string) *Channel {
+	channelPathID := getAllChannels().ID
 	chID, exists := channelPathID[path]
 	if !exists {
 		log.Println(color.HiYellowString("[failed to get channel in PathGetChannel(\"%s\")] not found such channel", path))
 		return nil
 	}
 	// チャンネルの path（"gps/times/kitsnegra" とか）から *Channel 型を得る
-	return bot.GetChannel(chID)
+	return GetChannel(chID)
 }
 
 func (ch *Channel) GetChildren() []*Channel {
 	if ch == nil {
 		return []*Channel{}
 	}
-	resp, _, err := ch.bot.Wsbot.API().ChannelApi.GetChannel(context.Background(), ch.ID).Execute()
+	resp, _, err := Wsbot.API().ChannelApi.GetChannel(context.Background(), ch.ID).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get children of #%s in GetChildren()] %s", ch.Path, err))
 		return []*Channel{}
@@ -71,7 +69,7 @@ func (ch *Channel) GetChildren() []*Channel {
 
 	children := []*Channel{}
 	for _, child := range resp.Children {
-		if c := ch.bot.GetChannel(child); c != nil {
+		if c := GetChannel(child); c != nil {
 			children = append(children, c)
 		}
 	}
@@ -91,7 +89,7 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 
 	respAll := make([]traq.Message, 3000) // 上限はとりあえず 3000 とする
 	for i := 0; i*150 < limit; i++ {
-		resp, _, err := ch.bot.Wsbot.API().ChannelApi.GetMessages(context.Background(), ch.ID).
+		resp, _, err := Wsbot.API().ChannelApi.GetMessages(context.Background(), ch.ID).
 			Limit(int32(150)).Offset(int32(150 * i)).Execute()
 		if err != nil {
 			log.Println(color.HiYellowString(
@@ -130,14 +128,14 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 	addUser := func(userId string) { // 与えられた UUID をもつユーザーがまだ userDic になければ追加する
 		_, exists := userDic[userId]
 		if !exists {
-			user := ch.bot.GetUser(userId)
+			user := GetUser(userId)
 			if user != nil {
 				userDic[userId] = user
 			}
 		}
 	}
 
-	stampIDName := ch.bot.getAllStamps().Symbol
+	stampIDName := getAllStamps().Symbol
 
 	messages := make([]*Message, len(respAll))
 	for i, message := range respAll {
@@ -151,7 +149,6 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 				ID:    mstamp.StampId,
 				User:  userDic[mstamp.UserId],
 				Count: int(mstamp.Count),
-				bot:   ch.bot,
 			})
 		}
 
@@ -163,7 +160,6 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 			UpdatedAt: message.UpdatedAt.In(jst),
 			Author:    userDic[message.UserId],
 			Stamps:    stamps,
-			bot:       ch.bot,
 		}
 	}
 
@@ -178,7 +174,7 @@ func (ch *Channel) Send(content string) {
 		log.Println(color.HiYellowString("[failed to send message on #%s in Send()] message is empty", ch.Path))
 		return // 空白のメッセージは 400 Bad Request で弾かれるが、原因究明の手間を省くためにエラーメッセージ付でここで弾いてしまう
 	}
-	_, _, err := ch.bot.Wsbot.API().MessageApi.PostMessage(context.Background(), ch.ID).
+	_, _, err := Wsbot.API().MessageApi.PostMessage(context.Background(), ch.ID).
 		PostMessageRequest(traq.PostMessageRequest{Content: content}).Execute()
 
 	// traq-ws-bot を使わない場合、
@@ -199,7 +195,7 @@ func (ch *Channel) Join() {
 	}
 	// Bot のユーザーとしての ID と BOT_ID とは別もの
 
-	_, err := ch.bot.Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), os.Getenv("BOT_ID")).
+	_, err := Wsbot.API().BotApi.LetBotJoinChannel(context.Background(), os.Getenv("BOT_ID")).
 		PostBotActionJoinRequest(*traq.NewPostBotActionJoinRequest(ch.ID)).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString(
@@ -212,7 +208,7 @@ func (ch *Channel) Leave() {
 	if ch == nil {
 		return
 	}
-	_, err := ch.bot.Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), os.Getenv("BOT_ID")).
+	_, err := Wsbot.API().BotApi.LetBotLeaveChannel(context.Background(), os.Getenv("BOT_ID")).
 		PostBotActionLeaveRequest(*traq.NewPostBotActionLeaveRequest(ch.ID)).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString(

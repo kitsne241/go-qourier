@@ -13,8 +13,8 @@ type bimap struct {
 	// 一意に定まるので両方とも Identifier といえばそうだけど、ここでは ID とは UUID のことにする
 }
 
-func (bot *Bot) getAllStamps() bimap {
-	stamps, _, err := bot.Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
+func getAllStamps() bimap {
+	stamps, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get stamps in getAllStamps()] %s", err))
 	}
@@ -28,8 +28,8 @@ func (bot *Bot) getAllStamps() bimap {
 	return bimap{stampNameID, stampIDName}
 }
 
-func (bot *Bot) getAllUsers() bimap {
-	users, _, err := bot.Wsbot.API().UserApi.GetUsers(context.Background()).IncludeSuspended(true).Execute()
+func getAllUsers() bimap {
+	users, _, err := Wsbot.API().UserApi.GetUsers(context.Background()).IncludeSuspended(true).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get users in getAllUsers()] %s", err))
 	}
@@ -43,13 +43,13 @@ func (bot *Bot) getAllUsers() bimap {
 	return bimap{userNameID, userIDName}
 }
 
-func (bot *Bot) getAllChannels() bimap {
+func getAllChannels() bimap {
 	// 一度に何百回も API にアクセスするとエラーを生じがちなので
 	// たった一度の API アクセスからチャンネルの path と ID の対応表を作りたい
 	// GetChannels によって全てのパブリックチャンネルについて チャンネルのID・親チャンネルのID・チャンネルの名前 の 3 つが分かるので、
 	// 親子の関連付けからチャンネルの親子関係のグラフを作成し、それぞれのチャンネルの名前を末尾まで継承してパスを作る
 
-	channels, _, err := bot.Wsbot.API().ChannelApi.GetChannels(context.Background()).IncludeDm(false).Execute()
+	channels, _, err := Wsbot.API().ChannelApi.GetChannels(context.Background()).IncludeDm(false).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get channels in getAllChannels()] %s", err))
 	}
