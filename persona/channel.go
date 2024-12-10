@@ -25,8 +25,8 @@ func (bot *Bot) GetChannel(chID string) *Channel {
 		return nil
 	}
 
-	var parent *Channel
-	var path string
+	path := ""
+	parent := (*Channel)(nil)
 
 	parentID := resp.ParentId.Get()
 	if parentID != nil { // resp.ParentId.IsSet() は常に true のようなので…

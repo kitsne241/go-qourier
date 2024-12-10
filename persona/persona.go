@@ -2,6 +2,7 @@ package persona
 
 // traQ における Bot 自身の動作の関数
 // go-traq をさらに機能を絞って discord.py 風にラップしたもの
+// 方針は「内部に長命な情報を持たず」して「できる限り少ない API 呼び出しで必要な情報を得る」こと
 
 import (
 	"log"
@@ -41,7 +42,7 @@ func init() {
 // main.go で使うサブパッケージの関数は全て大文字から始める。小文字スタートのままではインポートが失敗する
 
 func (bot *Bot) SetUp(commands Commands) {
-	var err error
+	err := error(nil)
 	for name, command := range commands {
 		command.Name = name
 		command.action, err = varadic(command)

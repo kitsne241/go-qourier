@@ -59,7 +59,7 @@ func Connect() {
 	log.Println(color.GreenString("[connected to database]"))
 }
 
-func SetUp[T any](origin T, reset bool) {
+func SetUp[T ~struct{}](origin T, reset bool) {
 	// 引数はデータベースに保存するデータの初期値のポインタ
 	// データベースに何も保存されていない最初の状態や異常時にのみこの値を用いる
 
@@ -70,7 +70,7 @@ func SetUp[T any](origin T, reset bool) {
 		panic(color.HiRedString("[failed to initialize table] make sure your container is ready!"))
 	}
 
-	var count int // すでに存在するレコードの数
+	count := 0 // すでに存在するレコードの数
 	if err := Db.Get(&count, `SELECT COUNT(*) FROM config`); err != nil {
 		log.Println(color.HiYellowString("[failed to get count of table] %s", err))
 		panic(color.HiRedString("[failed to initialize table]"))
@@ -94,7 +94,7 @@ func SetUp[T any](origin T, reset bool) {
 	log.Println(color.GreenString("[initialized table]"))
 }
 
-func Save[T any](config T) error {
+func Save[T ~struct{}](config T) error {
 	configJson, err := json.Marshal(config)
 	if err != nil {
 		return fmt.Errorf("failed to marshal %v: %w", config, err)
@@ -110,12 +110,12 @@ func Save[T any](config T) error {
 	return nil // 必ず error 型の返り値を返す必要があるので nil を返す（nil は error 型か…？）
 }
 
-func Load[T any]() (T, error) {
-	var record struct { // データベースに保存されているレコードを受け取るための型
+func Load[T ~struct{}]() (T, error) {
+	record := struct { // データベースに保存されているレコードを受け取るための型
 		Json string `json:"json"`
-	}
+	}{}
 
-	var config T // エラーの場合の返り値
+	config := T{} // エラーの場合の返り値
 
 	if err := Db.Get(&record, "SELECT * FROM config"); err != nil {
 		return config, fmt.Errorf("failed to get data from database: %w", err)
@@ -130,7 +130,7 @@ func Load[T any]() (T, error) {
 	return config, nil
 }
 
-func With[T any](action func(config *T) error) error {
+func With[T ~struct{}](action func(config *T) error) error {
 	conf, err := Load[T]()
 	if err != nil {
 		return fmt.Errorf("in with: %w", err)

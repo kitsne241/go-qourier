@@ -72,8 +72,7 @@ func (bot *Bot) getAllChannels() bimap {
 		currentID := channel.Id
 		path := channelIDName[currentID]
 		for {
-			var exists bool
-			currentID, exists = idTree[currentID]
+			currentID, exists := idTree[currentID]
 			if !exists {
 				break
 			}
