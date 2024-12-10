@@ -33,6 +33,7 @@ func (bot *Bot) GetUser(usID string) *User {
 
 func (bot *Bot) NameGetUser(name string) *User {
 	// ユーザー名（"kitsne" とか）から *User 型を得る
+	userNameID := bot.getAllUsers().ID
 	usID, exists := userNameID[name]
 	if !exists {
 		log.Println(color.HiYellowString("[failed to get user in NameGetUser(\"%s\")] not found such user", name))

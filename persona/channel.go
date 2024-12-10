@@ -49,6 +49,7 @@ func (bot *Bot) GetChannel(chID string) *Channel {
 }
 
 func (bot *Bot) PathGetChannel(path string) *Channel {
+	channelPathID := bot.getAllChannels().ID
 	chID, exists := channelPathID[path]
 	if !exists {
 		log.Println(color.HiYellowString("[failed to get channel in PathGetChannel(\"%s\")] not found such channel", path))
@@ -78,6 +79,7 @@ func (ch *Channel) GetChildren() []*Channel {
 }
 
 func (ch *Channel) GetRecentMessages(limit int) []*Message {
+	// 一番新しい投稿が配列の [0] になる
 	if ch == nil {
 		return []*Message{}
 	}
@@ -134,6 +136,8 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 			}
 		}
 	}
+
+	stampIDName := ch.bot.getAllStamps().Symbol
 
 	messages := make([]*Message, len(respAll))
 	for i, message := range respAll {

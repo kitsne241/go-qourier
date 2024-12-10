@@ -58,6 +58,8 @@ func (bot *Bot) GetMessage(msID string) *Message {
 		}
 	}
 
+	stampIDName := ch.bot.getAllStamps().Symbol
+
 	stamps := []*Stamp{}
 	for _, mstamp := range resp.Stamps {
 		addUser(mstamp.UserId)

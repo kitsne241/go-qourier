@@ -18,21 +18,25 @@ type Stamp struct {
 }
 
 func (bot *Bot) GetStamp(stID string) *Stamp {
+	// getAllStamps を使う意味がないので素直に API にアクセスしてスタンプの情報を得る
 	// 型の意味合いが多少異なるので Count, User はそれぞれ初期値 0, nil として返す
-	// API にはアクセスせず、手持ちの連想配列（辞書）から UUID と名前の組を得て返却する
-	// Bot の購読設定で STAMP_CREATED にチェックを入れていないと更新されないので、新しいスタンプは nil で返ることがある
-	name, exists := stampIDName[stID]
-	if exists {
-		return &Stamp{Name: name, ID: stID}
-	} else {
+	resp, _, err := bot.Wsbot.API().StampApi.GetStamp(context.Background(), stID).Execute()
+	if err != nil {
+		log.Println(color.HiYellowString("[failed to get stamp in GetStamp(%s)] %s", stID, err))
 		return nil
+	}
+	return &Stamp{
+		Name: resp.Name,
+		ID:   stID,
 	}
 }
 
 func (bot *Bot) NameGetStamp(name string) *Stamp {
-	id, exists := stampNameID[name]
+	// NameGetUser と違い getAllStamps できれば欲しい情報は全て集まるので GetStamp は呼ばない
+	stampNameID := bot.getAllStamps().ID
+	stID, exists := stampNameID[name]
 	if exists {
-		return &Stamp{Name: name, ID: id}
+		return &Stamp{Name: name, ID: stID}
 	} else {
 		return nil
 	}
@@ -42,12 +46,13 @@ func (ms *Message) Stamp(stamps ...string) {
 	if ms == nil {
 		return
 	}
+	stampNameID := ms.bot.getAllStamps().ID
 	for _, stamp := range stamps {
-		stampID, exists := stampNameID[stamp]
+		stID, exists := stampNameID[stamp]
 		if !exists {
 			log.Println(color.HiYellowString("[failed to put stamp to post in Stamp(\"%s\")] stamp \"%s\" not found", stamp, stamp))
 		}
-		_, err := ms.bot.Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID).
+		_, err := ms.bot.Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stID).
 			PostMessageStampRequest(*traq.NewPostMessageStampRequestWithDefaults()).Execute()
 
 		if err != nil {

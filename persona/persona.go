@@ -4,7 +4,6 @@ package persona
 // go-traq をさらに機能を絞って discord.py 風にラップしたもの
 
 import (
-	"context"
 	"log"
 	"os"
 	"strings"
@@ -34,11 +33,6 @@ type Bot struct {
 }
 
 type Commands map[string]*Command
-
-var stampNameID = map[string]string{}   // "tada" -> "8bfd4032-18d1-477f-894c-08855b46fd2f"
-var stampIDName = map[string]string{}   // "8bfd4032-18d1-477f-894c-08855b46fd2f" -> "tada"
-var userNameID = map[string]string{}    // "kitsne" -> "a77f54f2-a7dc-4dab-ad6d-5c5df7e9ecfa"
-var channelPathID = map[string]string{} // "gps/times/kitsnegra" -> "019275db-f2fd-7922-81c9-956aab18612d"
 
 func init() {
 	godotenv.Load(".env")
@@ -118,19 +112,6 @@ func (bot *Bot) SetUp(commands Commands) {
 		bot.OnStampUpdate(ms)
 	})
 
-	bot.Wsbot.OnPing(func(p *payload.Ping) {
-		bot.getAllStamps()
-		bot.getAllUsers()
-		bot.getAllChannels()
-
-		log.Println(color.GreenString("[initialized bot]"))
-	})
-	// 定期的に呼ばれる Ping で Bot のリフレッシュをしたり
-
-	bot.getAllStamps()
-	bot.getAllUsers()
-	bot.getAllChannels()
-
 	log.Println(color.GreenString("[initialized bot]"))
 }
 
@@ -139,68 +120,4 @@ func (bot *Bot) Start() error {
 		panic(color.HiRedString("[bot is not set up]"))
 	}
 	return bot.Wsbot.Start()
-}
-
-func (bot *Bot) getAllStamps() {
-	stamps, _, err := bot.Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
-	if err != nil {
-		log.Println(color.HiYellowString("[failed to get stamps in getAllStamps()] %s", err))
-	}
-
-	stampNameID = map[string]string{}
-	stampIDName = map[string]string{}
-	for _, stamp := range stamps { // resp にはtraQ の全てのスタンプの情報が入っている
-		stampIDName[stamp.Id] = stamp.Name
-		stampNameID[stamp.Name] = stamp.Id
-	}
-}
-
-func (bot *Bot) getAllUsers() {
-	users, _, err := bot.Wsbot.API().UserApi.GetUsers(context.Background()).IncludeSuspended(true).Execute()
-	if err != nil {
-		log.Println(color.HiYellowString("[failed to get users in getAllUsers()] %s", err))
-	}
-
-	userNameID = map[string]string{}
-	for _, user := range users { // resp にはtraQ の全てのスタンプの情報が入っている
-		userNameID[user.Name] = user.Id
-	}
-}
-
-func (bot *Bot) getAllChannels() {
-	// 一度に何百回も API にアクセスするとエラーを生じがちなので
-	// たった一度の API アクセスからチャンネルの path と ID の対応表を作りたい
-	// GetChannels によって全てのパブリックチャンネルについて チャンネルのID・親チャンネルのID・チャンネルの名前 の 3 つが分かるので、
-	// 親子の関連付けからチャンネルの親子関係のグラフを作成し、それぞれのチャンネルの名前を末尾まで継承してパスを作る
-
-	channels, _, err := bot.Wsbot.API().ChannelApi.GetChannels(context.Background()).IncludeDm(false).Execute()
-	if err != nil {
-		log.Println(color.HiYellowString("[failed to get channels in getAllChannels()] %s", err))
-	}
-
-	tree := map[string]string{}
-	channelIDName := map[string]string{}
-	channelPathID = map[string]string{}
-
-	for _, channel := range channels.Public { // resp にはtraQ の全てのスタンプの情報が入っている
-		channelIDName[channel.Id] = channel.Name
-		parentID := channel.ParentId.Get()
-		if parentID != nil {
-			tree[channel.Id] = *parentID
-		}
-	}
-
-	for _, channel := range channels.Public {
-		currentID := channel.Id
-		path := channelIDName[currentID]
-		for {
-			var exists bool
-			currentID, exists = tree[currentID]
-			if !exists {
-				break
-			}
-			path = channelIDName[currentID] + "/" + path
-		}
-		channelPathID[path] = channel.Id
-	}
 }
