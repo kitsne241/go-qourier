@@ -40,11 +40,11 @@ var stampIDName = map[string]string{}   // "8bfd4032-18d1-477f-894c-08855b46fd2f
 var userNameID = map[string]string{}    // "kitsne" -> "a77f54f2-a7dc-4dab-ad6d-5c5df7e9ecfa"
 var channelPathID = map[string]string{} // "gps/times/kitsnegra" -> "019275db-f2fd-7922-81c9-956aab18612d"
 
-// main.go で使うサブパッケージの関数は全て大文字から始める。小文字スタートのままではインポートが失敗する
-
 func init() {
 	godotenv.Load(".env")
 }
+
+// main.go で使うサブパッケージの関数は全て大文字から始める。小文字スタートのままではインポートが失敗する
 
 func (bot *Bot) SetUp(commands Commands) {
 	var err error

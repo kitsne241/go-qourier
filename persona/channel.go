@@ -147,6 +147,7 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 				ID:    mstamp.StampId,
 				User:  userDic[mstamp.UserId],
 				Count: int(mstamp.Count),
+				bot:   ch.bot,
 			})
 		}
 
@@ -158,6 +159,7 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 			UpdatedAt: message.UpdatedAt.In(jst),
 			Author:    userDic[message.UserId],
 			Stamps:    stamps,
+			bot:       ch.bot,
 		}
 	}
 

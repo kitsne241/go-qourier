@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	traq "github.com/traPtitech/go-traq"
 )
 
 type Message struct {
@@ -20,15 +19,6 @@ type Message struct {
 	Author    *User     `json:"author"`
 	Stamps    []*Stamp  `json:"stamps"`
 	bot       *Bot
-}
-
-// 特定ユーザーからの特定スタンプ
-type Stamp struct {
-	Name  string `json:"name"`
-	ID    string `json:"id"`
-	Count int    `json:"count"`
-	User  *User  `json:"user"`
-	bot   *Bot
 }
 
 // 基本的に error は出さずに異常ログのみ、呼び出し元には nil あるいは空の配列として伝える方針
@@ -89,27 +79,6 @@ func (bot *Bot) GetMessage(msID string) *Message {
 		Author:    user,
 		Stamps:    stamps,
 		bot:       bot,
-	}
-}
-
-func (ms *Message) Stamp(stamps ...string) {
-	if ms == nil {
-		return
-	}
-	for _, stamp := range stamps {
-		stampID, exists := stampNameID[stamp]
-		if !exists {
-			log.Println(color.HiYellowString("[failed to put stamp to post in Stamp(\"%s\")] stamp \"%s\" not found", stamp, stamp))
-		}
-		_, err := ms.bot.Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID).
-			PostMessageStampRequest(*traq.NewPostMessageStampRequestWithDefaults()).Execute()
-
-		if err != nil {
-			log.Println(color.HiYellowString(
-				"[failed to put stamp to post in Stamp(\"%s\")] %s\nMessage: %s @%s \"%s\"", stamp, err, ms.CreatedAt, ms.Author, ms.Text,
-			))
-			// ユーザーやチャンネルと違いメッセージを一意に特定できる識別子は UUID しかないが、UUID そのものを表示させても…
-		}
 	}
 }
 
