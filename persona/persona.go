@@ -24,10 +24,18 @@ type Command struct {
 	action func(*Message, ...any) error // Action を可変引数化した関数。実際に実行されるのはこっち
 }
 
+// コマンド以外で新規メッセージを受け取ったときに呼ばれる関数
 var OnMessage func(*Message)
+
+// コマンドの実行に失敗したときに呼ばれる関数
 var OnFail func(*Message, *Command, error)
+
+// 投稿のメッセージにスタンプが追加・削除されたときに呼ばれる関数
 var OnStampUpdate func(*Message)
+
+// WebSocket Bot 本体
 var Wsbot *traqwsbot.Bot
+
 var Me *User
 
 type Commands map[string]*Command
@@ -112,10 +120,11 @@ func SetUp(commands Commands) {
 	log.Println(color.GreenString("[initialized bot]"))
 }
 
-// Bot を起動。Bot が動いている限りプログラムはこの先に進まない
+// Bot を起動。Bot が停止するとエラーを表示し panic する
 func Start() error {
 	if Wsbot == nil {
 		panic(color.HiRedString("[bot is not set up]"))
 	}
-	return Wsbot.Start()
+	err := Wsbot.Start()
+	panic(color.HiRedString("[bot shut down] %s", err))
 }
