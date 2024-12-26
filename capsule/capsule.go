@@ -70,7 +70,7 @@ func SetUp[T any](origin T, reset bool) {
 		panic(color.HiRedString("[failed to initialize table] make sure your container is ready!"))
 	}
 
-	var count int // すでに存在するレコードの数
+	count := 0 // すでに存在するレコードの数
 	if err := Db.Get(&count, `SELECT COUNT(*) FROM config`); err != nil {
 		log.Println(color.HiYellowString("[failed to get count of table] %s", err))
 		panic(color.HiRedString("[failed to initialize table]"))
@@ -111,9 +111,9 @@ func Save[T any](config T) error {
 }
 
 func Load[T any]() (T, error) {
-	var record struct { // データベースに保存されているレコードを受け取るための型
+	record := struct { // データベースに保存されているレコードを受け取るための型
 		Json string `json:"json"`
-	}
+	}{}
 
 	var config T // エラーの場合の返り値
 

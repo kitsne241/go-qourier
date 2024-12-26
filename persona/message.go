@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	traq "github.com/traPtitech/go-traq"
 )
 
+// traQ の投稿を表す型
 type Message struct {
 	Channel   *Channel  `json:"channel"`
 	Text      string    `json:"text"`
@@ -21,17 +21,10 @@ type Message struct {
 	Stamps    []*Stamp  `json:"stamps"`
 }
 
-// 特定ユーザーからの特定スタンプ
-type Stamp struct {
-	Name  string `json:"name"`
-	ID    string `json:"id"`
-	Count int    `json:"count"`
-	User  *User  `json:"user"`
-}
-
 // 基本的に error は出さずに異常ログのみ、呼び出し元には nil あるいは空の配列として伝える方針
 // 適切な引数による実行の上で API との接続で問題が生じた場合はエラーメッセージがエラーの原因に直接結びつかない気がするため
 
+// 引数の UUID をもつメッセージを取得
 func GetMessage(msID string) *Message {
 	resp, _, err := Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
 	if err != nil {
@@ -55,12 +48,26 @@ func GetMessage(msID string) *Message {
 		return nil
 	}
 
+	userDic := map[string]*User{}
+	addUser := func(userId string) { // 与えられた UUID をもつユーザーがまだ userDic になければ追加する
+		_, exists := userDic[userId]
+		if !exists {
+			user := GetUser(userId)
+			if user != nil {
+				userDic[userId] = user
+			}
+		}
+	}
+
+	stampIDName := getAllStamps().Symbol
+
 	stamps := []*Stamp{}
 	for _, mstamp := range resp.Stamps {
+		addUser(mstamp.UserId)
 		stamps = append(stamps, &Stamp{
 			Name:  stampIDName[mstamp.StampId],
 			ID:    mstamp.StampId,
-			User:  GetUser(mstamp.UserId), // 各ユーザーにつき一回きりの取得なので addUser() は使わないでよさそう
+			User:  userDic[mstamp.UserId],
 			Count: int(mstamp.Count),
 		})
 	}
@@ -76,40 +83,21 @@ func GetMessage(msID string) *Message {
 	}
 }
 
-func (ms *Message) Stamp(stamps ...string) {
-	if ms == nil {
-		return
-	}
-	for _, stamp := range stamps {
-		stampID, exists := stampNameID[stamp]
-		if !exists {
-			log.Println(color.HiYellowString("[failed to put stamp to post in Stamp(\"%s\")] stamp \"%s\" not found", stamp, stamp))
-		}
-		_, err := Wsbot.API().MessageApi.AddMessageStamp(context.Background(), ms.ID, stampID).
-			PostMessageStampRequest(*traq.NewPostMessageStampRequestWithDefaults()).Execute()
-
-		if err != nil {
-			log.Println(color.HiYellowString(
-				"[failed to put stamp to post in Stamp(\"%s\")] %s\nMessage: %s @%s \"%s\"", stamp, err, ms.CreatedAt, ms.Author, ms.Text,
-			))
-			// ユーザーやチャンネルと違いメッセージを一意に特定できる識別子は UUID しかないが、UUID そのものを表示させても…
-		}
-	}
-}
-
 // traQ 内部で使われている Unembedder と概ね同じロジック（TypeScript で書かれている）を Go で再実装
 // traq-ws-bot でメッセージイベントを受け取った時には PlainText を取得できるが、go-traq の API としては提供されていない
 // https://github.com/traPtitech/traQ_S-UI/blob/master/src/lib/markdown/internalLinkUnembedder.ts
 // 基本的に埋め込みは type, raw, id の 3 つのキーのみから構成される JSON 文字列 !{ ... } である
 
+// メッセージ中の埋め込みを表す型
 type Embed struct {
-	Type  string `json:"type"`
-	Raw   string `json:"raw"`
-	ID    string `json:"id"`
+	Type  string `json:"type"`  // "user"
+	Raw   string `json:"raw"`   // "@BOT_nek"
+	ID    string `json:"id"`    // "0192d23e-2fb1-764b-ba7d-dbabd1185e00"
 	Start int    `json:"start"` // 埋め込みの開始位置
 	End   int    `json:"end"`   // 埋め込みの終了位置
 }
 
+// メッセージ本文を埋め込みのないもとの Markdown の形式に変換する
 func Unembed(text string) (string, []Embed) {
 	textRune := []rune(text)
 	inEmbed := false
