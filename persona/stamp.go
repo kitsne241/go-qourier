@@ -31,8 +31,7 @@ func GetStamp(stID string) *Stamp {
 
 // 引数の名前をもつスタンプを取得。Count と User は無意味な値
 func NameGetStamp(name string) *Stamp {
-	// NameGetUser と違い getAllStamps できれば欲しい情報は全て集まるので GetStamp は呼ばない
-	stampNameID := getAllStamps().ID
+	stampNameID := allStamps.ID
 	stID, exists := stampNameID[name]
 	if exists {
 		return &Stamp{Name: name, ID: stID}
@@ -46,7 +45,7 @@ func (ms *Message) Stamp(stamps ...string) {
 	if ms == nil {
 		return
 	}
-	stampNameID := getAllStamps().ID
+	stampNameID := allStamps.ID
 	for _, stamp := range stamps {
 		stID, exists := stampNameID[stamp]
 		if !exists {

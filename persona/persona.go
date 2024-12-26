@@ -117,6 +117,10 @@ func SetUp(commands Commands) {
 		OnStampUpdate(ms)
 	})
 
+	allStamps = getAllStamps()
+	allUsers = getAllUsers()
+	allChannels = getAllChannels()
+
 	log.Println(color.GreenString("[initialized bot]"))
 }
 

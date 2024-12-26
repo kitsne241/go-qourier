@@ -50,7 +50,7 @@ func GetChannel(chID string) *Channel {
 
 // 引数のパスをもつチャンネルを取得
 func PathGetChannel(path string) *Channel {
-	channelPathID := getAllChannels().ID
+	channelPathID := allChannels.ID
 	chID, exists := channelPathID[path]
 	if !exists {
 		log.Println(color.HiYellowString("[failed to get channel in PathGetChannel(\"%s\")] not found such channel", path))
@@ -140,7 +140,7 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 		}
 	}
 
-	stampIDName := getAllStamps().Symbol
+	stampIDName := allStamps.Symbol
 
 	messages := make([]*Message, len(respAll))
 	for i, message := range respAll {

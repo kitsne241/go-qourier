@@ -13,6 +13,10 @@ type bimap struct {
 	// 一意に定まるので両方とも Identifier といえばそうだけど、ここでは ID とは UUID のことにする
 }
 
+var allStamps bimap
+var allUsers bimap
+var allChannels bimap
+
 func getAllStamps() bimap {
 	stamps, _, err := Wsbot.API().StampApi.GetStamps(context.Background()).Execute()
 	if err != nil {

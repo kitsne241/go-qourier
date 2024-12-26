@@ -33,7 +33,7 @@ func GetUser(usID string) *User {
 
 // 引数のユーザー名（traQ ID）をもつユーザーを取得
 func NameGetUser(name string) *User {
-	userNameID := getAllUsers().ID
+	userNameID := allUsers.ID
 	usID, exists := userNameID[name]
 	if !exists {
 		log.Println(color.HiYellowString("[failed to get user in NameGetUser(\"%s\")] not found such user", name))
