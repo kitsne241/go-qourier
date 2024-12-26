@@ -42,7 +42,8 @@ func NameGetUser(name string) *User {
 	return GetUser(usID)
 }
 
-func getMe() *User {
+// Bot 自身のユーザーを取得
+func GetMe() *User {
 	resp, _, err := Wsbot.API().MeApi.GetMe(context.Background()).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get myself in GetMe()] %s", err)) // すごい文面だ…

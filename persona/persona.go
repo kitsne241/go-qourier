@@ -15,6 +15,7 @@ import (
 	payload "github.com/traPtitech/traq-ws-bot/payload"
 )
 
+// Bot が実行するコマンドを定義する型
 type Command struct {
 	Action any    // *Message 型 とその他 0 個以上の引数を持ち、error 型を返す関数
 	Syntax string // %s（文字列）, %d（数）, %x（無視）を用いた文字列として指定するコマンドの型
@@ -36,8 +37,7 @@ var OnStampUpdate func(*Message)
 // WebSocket Bot 本体
 var Wsbot *traqwsbot.Bot
 
-var Me *User
-
+// コマンドの名前と実行する関数の対応
 type Commands map[string]*Command
 
 func init() {
@@ -46,6 +46,11 @@ func init() {
 
 // コマンドセットを Bot に入力して初期化する
 func SetUp(commands Commands) {
+	if len(os.Getenv("ACCESS_TOKEN")) == 0 {
+		panic(color.HiRedString("[failed to build a bot] make sure ACCESS_TOKEN is set!"))
+		// よくやるミスだったので特別にエラーメッセージをかく
+	}
+
 	err := error(nil)
 	for name, command := range commands {
 		command.Name = name
@@ -64,10 +69,6 @@ func SetUp(commands Commands) {
 		panic(color.HiRedString("[failed to create a new bot] %s", err))
 	}
 
-	if Me = getMe(); Me == nil {
-		panic(color.HiRedString("[failed to build a bot] make sure ACCESS_TOKEN is set!"))
-	}
-
 	Wsbot.OnMessageCreated(func(p *payload.MessageCreated) {
 		ms := GetMessage(p.Message.ID)
 		if ms == nil {
@@ -75,11 +76,10 @@ func SetUp(commands Commands) {
 		}
 
 		// 送られてきたメッセージがコマンドであるならば適切に解釈してコマンドを実行する
-
 		_, embeds := Unembed(ms.Text)
 
 		if (len(embeds) > 0) && (embeds[0].Start == 0) {
-			if (embeds[0].Type == "user") && (embeds[0].ID == Me.ID) {
+			if (embeds[0].Type == "user") && (embeds[0].ID == GetMe().ID) {
 				// メッセージの最初で Bot 自身に対するメンションがなされている場合
 
 				elements := strings.SplitN(strings.TrimSpace(ms.Text[embeds[0].End:]), " ", 2)
