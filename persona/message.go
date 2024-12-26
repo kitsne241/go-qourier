@@ -10,6 +10,7 @@ import (
 	"github.com/fatih/color"
 )
 
+// traQ の投稿を表す型
 type Message struct {
 	Channel   *Channel  `json:"channel"`
 	Text      string    `json:"text"`
@@ -23,6 +24,7 @@ type Message struct {
 // 基本的に error は出さずに異常ログのみ、呼び出し元には nil あるいは空の配列として伝える方針
 // 適切な引数による実行の上で API との接続で問題が生じた場合はエラーメッセージがエラーの原因に直接結びつかない気がするため
 
+// 引数の UUID をもつメッセージを取得
 func GetMessage(msID string) *Message {
 	resp, _, err := Wsbot.API().MessageApi.GetMessage(context.Background(), msID).Execute()
 	if err != nil {
@@ -86,14 +88,16 @@ func GetMessage(msID string) *Message {
 // https://github.com/traPtitech/traQ_S-UI/blob/master/src/lib/markdown/internalLinkUnembedder.ts
 // 基本的に埋め込みは type, raw, id の 3 つのキーのみから構成される JSON 文字列 !{ ... } である
 
+// メッセージ中の埋め込みを表す型
 type Embed struct {
-	Type  string `json:"type"`
-	Raw   string `json:"raw"`
-	ID    string `json:"id"`
+	Type  string `json:"type"`  // "user"
+	Raw   string `json:"raw"`   // "@BOT_nek"
+	ID    string `json:"id"`    // "0192d23e-2fb1-764b-ba7d-dbabd1185e00"
 	Start int    `json:"start"` // 埋め込みの開始位置
 	End   int    `json:"end"`   // 埋め込みの終了位置
 }
 
+// メッセージ本文を埋め込みのないもとの Markdown の形式に変換する
 func Unembed(text string) (string, []Embed) {
 	textRune := []rune(text)
 	inEmbed := false

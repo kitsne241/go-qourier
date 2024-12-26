@@ -10,17 +10,19 @@ import (
 	traq "github.com/traPtitech/go-traq"
 )
 
+// traQ チャンネルを表す型
 type Channel struct {
-	Name   string   `json:"name"`
-	Path   string   `json:"path"` // 例： "team/sound/1DTM"
-	ID     string   `json:"id"`
+	Name   string   `json:"name"` // "kitsnegra"
+	Path   string   `json:"path"` // "gps/times/kitsnegra"
+	ID     string   `json:"id"`   // "019275db-f2fd-7922-81c9-956aab18612d"
 	Parent *Channel `json:"parent"`
 }
 
+// 引数の UUID をもつチャンネルを取得
 func GetChannel(chID string) *Channel {
 	resp, _, err := Wsbot.API().ChannelApi.GetChannel(context.Background(), chID).Execute()
 	if err != nil {
-		log.Println(color.HiYellowString("[failed to get channel in GetChannel(%s)] %s", chID, err))
+		log.Println(color.HiYellowString("[failed to get channel in GetChannel(\"%s\")] %s", chID, err))
 		return nil
 	}
 
@@ -46,6 +48,7 @@ func GetChannel(chID string) *Channel {
 	}
 }
 
+// 引数のパスをもつチャンネルを取得
 func PathGetChannel(path string) *Channel {
 	channelPathID := getAllChannels().ID
 	chID, exists := channelPathID[path]
@@ -57,6 +60,7 @@ func PathGetChannel(path string) *Channel {
 	return GetChannel(chID)
 }
 
+// 子チャンネルの配列を取得
 func (ch *Channel) GetChildren() []*Channel {
 	if ch == nil {
 		return []*Channel{}
@@ -76,6 +80,7 @@ func (ch *Channel) GetChildren() []*Channel {
 	return children
 }
 
+// 最新のメッセージを引数個取得
 func (ch *Channel) GetRecentMessages(limit int) []*Message {
 	// 一番新しい投稿が配列の [0] になる
 	if ch == nil {
@@ -166,6 +171,7 @@ func (ch *Channel) GetRecentMessages(limit int) []*Message {
 	return messages
 }
 
+// チャンネルにメッセージを送信
 func (ch *Channel) Send(content string) {
 	if ch == nil {
 		return
@@ -186,6 +192,7 @@ func (ch *Channel) Send(content string) {
 	}
 }
 
+// チャンネルに参加（メンション以外の投稿イベントを購読）する
 func (ch *Channel) Join() {
 	// ここでの Join は「このチャンネルにおける自身へのメンション以外の投稿イベントを購読する」こと
 	// チャンネルへの投稿、チャンネルの直近の投稿の取得、メンションへの反応などはチャンネルに Join していなくても可能
@@ -204,6 +211,7 @@ func (ch *Channel) Join() {
 	}
 }
 
+// チャンネルから脱退する
 func (ch *Channel) Leave() {
 	if ch == nil {
 		return

@@ -7,13 +7,15 @@ import (
 	"github.com/fatih/color"
 )
 
+// traQ のユーザーを表現する型
 type User struct {
-	Nick  string `json:"nick"` // きつね
-	Name  string `json:"name"` // kitsne
-	ID    string `json:"id"`   // UUID
-	IsBot bool   `json:"isbot"`
+	Nick  string `json:"nick"`  // "きつね"
+	Name  string `json:"name"`  // "kitsne"
+	ID    string `json:"id"`    // "a77f54f2-a7dc-4dab-ad6d-5c5df7e9ecfa"
+	IsBot bool   `json:"isbot"` // false
 }
 
+// 引数の UUID をもつユーザーを取得
 func GetUser(usID string) *User {
 	resp, _, err := Wsbot.API().UserApi.GetUser(context.Background(), usID).Execute()
 	if err != nil {
@@ -29,8 +31,8 @@ func GetUser(usID string) *User {
 	}
 }
 
+// 引数のユーザー名（traQ ID）をもつユーザーを取得
 func NameGetUser(name string) *User {
-	// ユーザー名（"kitsne" とか）から *User 型を得る
 	userNameID := getAllUsers().ID
 	usID, exists := userNameID[name]
 	if !exists {

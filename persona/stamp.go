@@ -8,17 +8,16 @@ import (
 	traq "github.com/traPtitech/go-traq"
 )
 
-// スタンプそのものというよりは、特定ユーザーによって投稿にスタンプが 1 つ以上つけられた『状態』を表す型
+// traQ の投稿に対し、あるユーザーによって 1 つ以上つけられたスタンプを表す型
 type Stamp struct {
-	Name  string `json:"name"`
-	ID    string `json:"id"`
-	Count int    `json:"count"`
+	Name  string `json:"name"`  // "tada"
+	ID    string `json:"id"`    // "8bfd4032-18d1-477f-894c-08855b46fd2f"
+	Count int    `json:"count"` // 1
 	User  *User  `json:"user"`
 }
 
+// 引数の UUID をもつスタンプを取得。Count と User は無意味な値
 func GetStamp(stID string) *Stamp {
-	// getAllStamps を使う意味がないので素直に API にアクセスしてスタンプの情報を得る
-	// 型の意味合いが多少異なるので Count, User はそれぞれ初期値 0, nil として返す
 	resp, _, err := Wsbot.API().StampApi.GetStamp(context.Background(), stID).Execute()
 	if err != nil {
 		log.Println(color.HiYellowString("[failed to get stamp in GetStamp(%s)] %s", stID, err))
@@ -30,6 +29,7 @@ func GetStamp(stID string) *Stamp {
 	}
 }
 
+// 引数の名前をもつスタンプを取得。Count と User は無意味な値
 func NameGetStamp(name string) *Stamp {
 	// NameGetUser と違い getAllStamps できれば欲しい情報は全て集まるので GetStamp は呼ばない
 	stampNameID := getAllStamps().ID
@@ -41,6 +41,7 @@ func NameGetStamp(name string) *Stamp {
 	}
 }
 
+// メッセージに引数のスタンプを順番につける
 func (ms *Message) Stamp(stamps ...string) {
 	if ms == nil {
 		return

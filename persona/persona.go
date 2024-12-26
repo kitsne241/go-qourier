@@ -36,8 +36,7 @@ func init() {
 	godotenv.Load(".env")
 }
 
-// main.go で使うサブパッケージの関数は全て大文字から始める。小文字スタートのままではインポートが失敗する
-
+// コマンドセットを Bot に入力して初期化する
 func SetUp(commands Commands) {
 	err := error(nil)
 	for name, command := range commands {
@@ -113,6 +112,7 @@ func SetUp(commands Commands) {
 	log.Println(color.GreenString("[initialized bot]"))
 }
 
+// Bot を起動。Bot が動いている限りプログラムはこの先に進まない
 func Start() error {
 	if Wsbot == nil {
 		panic(color.HiRedString("[bot is not set up]"))
