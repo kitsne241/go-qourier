@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	traq "github.com/traPtitech/go-traq"
 )
 
 // traQ の投稿を表す型
 type Message struct {
 	Channel   *Channel  `json:"channel"`
-	Text      string    `json:"text"`
-	ID        string    `json:"id"`
+	Text      string    `json:"text"`      // メッセージテキスト
+	ID        string    `json:"id"`        // メッセージリンクに含まれる UUID
 	CreatedAt time.Time `json:"createdat"` // JST
 	UpdatedAt time.Time `json:"updatedat"` // JST
 	Author    *User     `json:"author"`
@@ -83,10 +84,33 @@ func GetMessage(msID string) *Message {
 	}
 }
 
-// traQ 内部で使われている Unembedder と概ね同じロジック（TypeScript で書かれている）を Go で再実装
-// traq-ws-bot でメッセージイベントを受け取った時には PlainText を取得できるが、go-traq の API としては提供されていない
-// https://github.com/traPtitech/traQ_S-UI/blob/master/src/lib/markdown/internalLinkUnembedder.ts
-// 基本的に埋め込みは type, raw, id の 3 つのキーのみから構成される JSON 文字列 !{ ... } である
+// Bot 自身の投稿を削除する
+func (ms *Message) Delete() {
+	if ms == nil {
+		return
+	}
+	_, err := Wsbot.API().MessageApi.DeleteMessage(context.Background(), ms.ID).Execute()
+	if err != nil {
+		log.Println(color.HiYellowString("[failed to delete message %s in Delete()] %s", ms.ID, err))
+	}
+}
+
+// Bot 自身の投稿を編集する
+func (ms *Message) Edit(content string) {
+	if ms == nil {
+		return
+	}
+	if content == "" {
+		log.Println(color.HiYellowString("[failed to edit message %s in Edit()] message is empty", ms.ID))
+		return
+	}
+	_, err := Wsbot.API().MessageApi.EditMessage(context.Background(), ms.ID).
+		PostMessageRequest(traq.PostMessageRequest{Content: content}).Execute()
+
+	if err != nil {
+		log.Println(color.HiYellowString("[failed to edit message %s in Edit()] %s", ms.ID, err))
+	}
+}
 
 // メッセージ中の埋め込みを表す型
 type Embed struct {
@@ -96,6 +120,11 @@ type Embed struct {
 	Start int    `json:"start"` // 埋め込みの開始位置
 	End   int    `json:"end"`   // 埋め込みの終了位置
 }
+
+// traQ 内部で使われている Unembedder と概ね同じロジック（TypeScript で書かれている）を Go で再実装
+// traq-ws-bot でメッセージイベントを受け取った時には PlainText を取得できるが、go-traq の API としては提供されていない
+// https://github.com/traPtitech/traQ_S-UI/blob/master/src/lib/markdown/internalLinkUnembedder.ts
+// 基本的に埋め込みは type, raw, id の 3 つのキーのみから構成される JSON 文字列 !{ ... } である
 
 // メッセージ本文を埋め込みのないもとの Markdown の形式に変換する
 func Unembed(text string) (string, []Embed) {
