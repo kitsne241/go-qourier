@@ -70,9 +70,10 @@ func getAllChannels() bimap {
 
 	for _, channel := range channels.Public {
 		currentID := channel.Id
+		exists := false
 		path := channelIDName[currentID]
 		for {
-			currentID, exists := idTree[currentID]
+			currentID, exists = idTree[currentID]
 			if !exists {
 				break
 			}
